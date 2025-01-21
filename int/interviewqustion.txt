@@ -1,0 +1,302 @@
+1	What is JavaScript
+2	What is the role of JS Engine
+3	What is Scope in JS. Types of Scope
+4	Difference between Global, functional and Block scope
+5	Difference between == & ===
+6	What is JSON
+7	What is a variable
+8	What is hoisting
+9	Data types in JS
+10	What is Null, undefined, not defined, NaN
+11	Type coercion in JS
+12	What is short circuit evaluation in JS
+13	Spread and rest operator
+14	Shallow copy and deep copy
+15	Global execuition context
+16	Diff Array methods in JS
+17	Pure functions
+18	Higher order functions, 
+19	First class functions
+20	Callback functions
+21	Genarator functions
+22	Factory functions
+23	Arrow functions
+24	Function defenition, function expression, anonymus functions
+25	Stack memory vs heap memory
+26	what is temporal ded zone
+27	Promises and async await
+28	Event loop, Call stack, task queue, Microtask queue
+29	What is Destructuring
+30	Prototype and prototypal inheritance
+31	What are polyfills. Create polyfills for forEach, map, fliter...... etc
+32	Closures
+33	Function currying
+34	Throttling and debouncing
+35	Events, types of events, event listeners
+36	Event bubling, event propogation, Event delegation, event capturing
+37	How to convert Array like object to Array
+38	arguments vs parameters, default parameters
+39	Call apply and bind
+40	what is template literals and string interpolation
+41	What is immitability
+42	try, catch and finally
+43	what is throw statement
+44	What is error propogation
+45	Types of errors
+46	How to create object- different ways
+47	What is dot notation and bracket notation
+48	Maps and Sets
+49	Web APIs
+50	Promise chaining, Diff methods of promises
+51	Callback hell
+52	setTimeOut, setTimeInterval
+53	Async and defer
+54	What is DOM
+55	What is BOM
+56	Explain this
+57	function definition vs Arrow functions
+58	What is an argument object, caller, callee
+59	Local storage, session storage, cookies
+60	Object.freeze vs Object.seal
+61	Shadow DOM
+62	What is usestrict
+63	what is event.preventDefault()
+64	Variable shadowing
+65	Revealing module pattern
+66	Different ways of deep freezing an object
+67	Map vs WeakMap, set vs weakSet
+68	Unary function
+69	var, let and const
+70	What is memoization
+71	how to encode and decode URL
+72	service workers
+73	indexedDB
+74	how to access history in js
+75	Same origin policy
+76	what is void(0)
+77	how to get query string values
+78	what is a labeld statement
+79	tree shaking in js
+80	proto vs prototype
+81	Proxy object
+82	Tagged template
+83	destructuring aliases
+84	what is observable
+85	nullish coalescing operator
+86	dense vs sparse array
+87 how you can secure the APIs
+88 what shedring in mongodb
+89 microfrontend and micro services
+90 CI/CD 
+91 SSR AND SSE
+92 brower router vs hash routes
+const list = [
+  { id: "1", group: "fruit", price: 30 },
+  { id: "2", group: "vegitable", price: 45 },
+  { id: "3", group: "fruit", price: 17 },
+  { id: "4", group: "grocery", price: 1212 }
+];
+
+const output = list.reduce((acc, item) => {
+  // If the group already exists, add the price, otherwise initialize it
+  acc[item.group] = (acc[item.group] || 0) + item.price;
+  return acc;
+}, {});
+
+console.log(output);
+
+const arr =[1,5,2,4,6]
+
+const arr = [1, 5, 2, 4, 6];
+
+// Insert 10 at index 2
+arr.splice(2, 0, 10);
+
+console.log(arr);
+
+const list  =[{
+    name:"alpha",
+    id:7,
+},
+{
+    name:"alpha",
+    id:45,
+},
+{
+    name:"pro",
+    id:7,
+}
+]
+const numArray = [1,3,4,5,63,3,3,2,3,4,3];
+find the duplicate and count
+
+
+class Node {
+    constructor(x) {
+        this.data = x;
+        this.left = null;
+        this.right = null;
+    }
+}
+
+ 
+// function to return the root of inverted tree
+function mirror(root) {
+
+}
+ 
+function inOrder(root) {
+    if (root === null)
+        return;
+    inOrder(root.left);
+    process.stdout.write(root.data + " ");
+    inOrder(root.right);
+}
+ 
+ 
+// Input Tree:
+//       1
+//      / \
+//     2   3
+//    / \
+//   4   5
+let root = new Node(1);
+root.left = new Node(2);
+root.right = new Node(3);
+root.left.left = new Node(4);
+root.left.right = new Node(5);
+ 
+root = mirror(root);
+ 
+// Mirror Tree:
+//       1
+//      / \
+//     3   2
+//        / \
+//       5   4
+inOrder(root);
+
+const person ={
+    name:"tiger"
+    }
+    let animal ={
+    name:"lino"
+    }
+    person = animal
+    console.log(person.name)
+
+    const arr = [1,2,3,4,5,6,7,8,9,10]
+const [1,2,3,4,...rest] = arr;
+
+
+function createBase(n){
+    return function(num){
+        return num + n
+    }
+}
+
+var addBase = createBase(6);
+console.log(addBase(10)); // returns 16
+console.log(addBase(21)); // returns 27
+
+const person = {
+    name: 'Alice',
+    introduce: function() {
+        console.log(`Hello, my name is ${this.name}`);
+    }
+};
+ 
+person.introduce();
+
+const intro = person.introduce;
+intro();
+
+
+const personWithArrow = {
+    name: 'Bob',
+    introduce: () => {
+        console.log(`Hello, my name is ${this.name}`);
+    }
+};
+personWithArrow.introduce();
+
+document.body.addEventListener('click', function() {
+    console.log(this);  // What is the value of `this`?
+});
+
+document.body.addEventListener('click', () => {
+    console.log(this);  // What is the value of `this`?
+});
+
+const arr = [
+    {name: "A", class:5},
+    {name: "B", class:6},
+    {name: "C", class:6},
+    {name: "D", class:5},
+]
+
+/*
+output = {class:5, name:['A','D']}
+{class:6, name:['B','C']}
+*/
+
+what stale useState?
+can we use hook in class based component?
+what is nodejs architecture?
+what is concurrency and parallisime?
+difference between callback vs promise vs async await
+how to handle data privacy using Closures
+what is process.exact and process.respond
+how can we achieve the asynchorouns behaviour in javascript?
+can we use hook in classbased component?
+pseduo element and pseduo class?
+difference between for of loop vs for in loop?
+Difference between map set and week map?
+garbage collection in nodejs
+what is clustor in nodejs
+replcia set in mongodb?
+indexing in nodejs?
+difference between any unkonwn in typeScript
+what are generics in typeScript
+what is d.ts file 
+how to optimized nodejs aapplication ?
+what is event loop in javascript?
+what are generator means ??
+what is babel?
+how jwt is worked ?
+what is loadblancing?
+
+
+
+var arr = [1, 2, 2, 3, 3, 3, 4, 5, 7, 6, 8, 8, 9, 9, 9]
+
+function removeDuplicate(arr) {
+  let freqMap = {}
+  let result = []
+
+  for (let num of arr) {
+    freqMap[num] = (freqMap[num] || 0) + 1
+  }
+
+  for (let count in freqMap) {
+  console.log(count)
+
+      result.push(Number(count))
+    
+  }
+  return result
+}
+
+console.log(removeDuplicate(arr))
+
+Example Input:
+"aabcccccaaa"
+
+Expected Output:
+"a2b1c5a3"
+
+5
+54
+543
+5432
+54321
