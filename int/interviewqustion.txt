@@ -265,6 +265,7 @@ what are generator means ??
 what is babel?
 how jwt is worked ?
 what is loadblancing?
+how to send email in nodejs
 
 
 
@@ -300,3 +301,140 @@ Expected Output:
 543
 5432
 54321
+
+how to center three divs
+
+Appentieve company
+
+var a=1;
+(function abc() {
+var a=10;
+})();
+console.log(a);
+
+(function abc() {
+var a=10;
+})();
+console.log(a);
+
+const promise = new Promise(res => res(2));
+promise.then(v => {
+ console.log(v);
+ return v * 2;
+})
+.then(v => {
+ console.log(v);
+ return v * 2;
+})
+.finally(v => {
+ console.log(v);
+ return v * 2;
+})
+.then(v => {
+ console.log(v);
+});
+
+console.log(‘1’)
+setTimeout(() => console.log(‘2’))
+new Promise(() =>console.log(‘3’))
+console.log(‘4’)
+
+
+function outer() {
+    let a = 10;
+    function inner(){
+        console.log('a = ', a);
+        let a = 20;
+    }
+    inner();
+}
+outer();
+
+Write a Timer component in ReactJS that starts at 10 and ends at 0. On reaching 0, 
+it stops at 0.
+
+function printStringWithDelay(str) {
+    let i = 0;
+
+    function printChar() {
+        if (i < str.length) {
+            console.log(str[i]);
+            i++;
+            setTimeout(printChar, 1000); // Call the function again after 1 second
+        }
+    }
+
+    printChar();
+}
+
+printStringWithDelay("bilal");
+
+
+you have 10gb data in excel format and identify the name like bilal depolyed 
+on server size of around 512mb on server
+
+performance optimizeation in react application while developing ??
+
+what are ways to acieve dobuncing in javascript?
+
+what is event delegation?
+// i/p : abcddcdbcd
+ 
+// o/p : abbcccdddd
+
+why we need redux even we have context api?
+find max number [21,45,67,53,89,24,4,8]
+
+console.log('A');
+
+setTimeout(() => console.log('B'), 0);
+
+Promise.resolve().then(() => console.log('C'));
+
+Promise.resolve().then(() => {
+
+  console.log('D');
+
+  setTimeout(() => console.log('E'), 0);
+
+});
+
+console.log('F');
+ 
+let bracket="(())()()()(("
+ 
+getName();
+
+console.log(x);
+
+console.log(getName);
+ 
+var x = 8;
+
+function getName() {
+
+    console.log("Hi Hoisting")
+
+}
+ 
+ INFOSYS
+ WITHOUT USING REVERSE METHOD
+ let str = "HELLO REACT NODE"
+
+function reverseSentence(str){
+    if(!str) return
+    let arr = str.split(' ')
+    let result = [];
+    for(let i=arr.length;i>=0; i--){
+        result.push(arr[i])
+        
+    }
+    return result.join(' ')
+}
+console.log(reverseSentence(str))
+
+es6 feature
+difference betweeen presentational component and container component?
+how react query cache the data from cache?
+what is cors Explain ?
+how to send data from child to parent ??
