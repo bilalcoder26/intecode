@@ -433,8 +433,49 @@ function reverseSentence(str){
 }
 console.log(reverseSentence(str))
 
+congnizant
+
 es6 feature
+what is single page application
 difference betweeen presentational component and container component?
 how react query cache the data from cache?
 what is cors Explain ?
 how to send data from child to parent ??
+difference package.json vs package.lock json
+what is single page application
+can you create HOC
+CAN YOU CREATE CUSTOM HOOK THAT FETECH APIs?
+Difference between regular function and arrow function?
+call apply bind
+[1,2,3,45,6] use reduce methode and give the avaerage?
+what is thunk middleware?
+what is metadata?
+what is block level elment and inline element
+poistion relative and absulute?
+let str = "My name is bilal mohammed" length of last charater?
+let arr = [1,[2,[3,4,5],6],7,8]
+console.log(arr.flat(6))
+what will happen if do not pass any depenceienc array in useEffect hook
+difference betweeen useEffect vs useLayout?
+
+
+hcl
+
+[2,5,4,6,7,3] => [[2,5],[4,3],[7]]
+create a function that try atleast 4 call to make api call if all the time api fails
+then return error object and function should be reusable 
+
+//INFOSYS
+
+// 1-'1'// error
+// false ==-0 // true
+// 1<2<3 <1 1<2<false ---> 1<2<0 ---> 1< fasle ---> 1< 0 //false
+// 1>2>3>1 --->  1>2> true --/. 1> true --->  1>1 // fasle
+
+var obj= {
+    a:{
+        b:{
+            c: [10, 20]
+        }
+    }
+}

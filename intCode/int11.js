@@ -34,7 +34,8 @@ Cannot read property 'a' of undefined.
 */
 
 /*
-Solution: To fix this issue, we need to correctly bind this to the callback so that it refers to obj. 
+Solution: To fix this issue, we need to correctly bind this to the callback so that 
+it refers to obj. 
 There are three common ways to do this:
 
 a. Use an Arrow Function: Arrow functions don’t create their own this. 

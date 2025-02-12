@@ -2,7 +2,7 @@
 
 // find unpaired bracket with count
 let bracket="(())()()()((" 
-//this appraoch i followed in interview which is not good 
+//this appraoch i followed in interview which is not good VERY BAD
 function pariBracket(str){
     if(!str || str.length === 1) return str
     const freqMap ={};
