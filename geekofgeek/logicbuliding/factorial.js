@@ -1,5 +1,6 @@
 /*
-Given the number n (n >=0), find its factorial. Factorial of n is defined as 1 x 2 x … x n. For n = 0, factorial is 1. We are going to discuss iterative and recursive programs in this post.
+Given the number n (n >=0), find its factorial. Factorial of n is defined as 1 x 2 x … x n. For n = 0, factorial is 1. 
+We are going to discuss iterative and recursive programs in this post.
 
 Examples:
 
