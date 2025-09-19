@@ -20,7 +20,7 @@ function generateSubarray(arr){
     return result;
 
 }
-console.log(generateSubarray([1, 2, 3]))
+console.log('dubloop, ',generateSubarray([1, 2, 3]))
 
 function generateSubarrayOptimal(arr){
     let result = [];
