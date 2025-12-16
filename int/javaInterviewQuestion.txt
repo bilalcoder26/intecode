@@ -1,0 +1,75 @@
+Interview questions.
+Spring bean lifecycle
+Singleton class
+Update and merge difference in Hibernate
+Oauth
+Ldap
+Accept and content type use in API'S
+Difference between soap and rest
+Lambda JAVA 8.
+Make list unmodifiable
+If clone method is not implemented then
+. clone will result ?
+      12.how to make a controller in spring make thread safe.
+https://www.google.com/url?sa=t&source=web&rct=j&url=https://studiofreya.com/2012/02/06/spring-mvc-how-to-build-a-thread-safe-controller/&ved=2ahUKEwisloahmI7jAhUPf30KHWpfDSoQFjALegQIARAB&usg=AOvVaw082rpaVwGF5LsCFATgZF_p&cshid=1561794205047
+       13. Callable interface
+14. If hascode return always 1 and equals return always true then if we add 3 element how many element will be in hashmap.
+15. How to make restful statefull.
+16. Functional interface.
+17. What is transaction.
+https://examples.javacodegeeks.com/enterprise-java/hibernate/hibernate-transaction-example/
+18. New in Java versions
+19. Difference between synchronize and lock.
+20.sql query to get second highest salary
+21. Hibernate-
+https://what-when-how.com/hibernate/implementing-conversations-hibernate/
+https://vladmihalcea.com/tutorials/hibernate/
+22. Transaction management in hibernate.
+23.Use of equals and hashcode
+24.Contract between equals and hashcode.
+25.Difference between == and equals method
+26.How to implement clone method, what if we don't implement.
+27.Difference between string , stringBuffer, String Builder.
+28.Why String is immutable in Java. Benefits
+29. Var arg method.
+30. Exception handling interview questions
+Custom exception
+Exception handling in spring boot.
+31.Object oriented Every topic interview questions
+32.Overriding rules
+33. Over loading rules
+34.Singleton class how to write.
+35.Immutable class how to write.
+36.Generic with example(advantage).
+37.Serialization
+38.How to prevention an instance variable from serialization different ways.
+39.Collection interview questions in details
+40.  Hashmap internal working in detail
+41. Hashset internal working
+42.Make list unmodifiable
+https://medium.com/@jovannypcg/understanding-springs-controlleradvice-cd96a364033f43.Array list linked list difference in detail.
+44.Comparable and comparator difference
+45. Transaction management.
+
+46. Solid principle
+47. Immutable class with other objects.
+48. Controller advice.
+https://medium.com/@jovannypcg/understanding-springs-controlleradvice-cd96a364033f
+49. Restcontroller with query param and path variable and optional.
+50. Working of hash set
+51. How can we maintain order of the hashset and hashmap.
+52. Design patterns.
+53. Api gate way
+54 hestrix
+55. Spring cloud.
+56. Steriotype annotations
+57. How to write JPA queries
+58. How to enable spring actuator all api
+59. Spring aspects.
+60. Fault in microservice.
+61. Junits and mockito.
+62. Spring security authentication.
+63. Default functinal interfaces
+64. Correlation I'd.
+65. Kafka advantage
+66. https://www.geeksforgeeks.org/metaspace-in-java-8-with-examples/

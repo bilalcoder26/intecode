@@ -55,3 +55,12 @@ function diceProblem(num){
 }
 console.log('diceProblem(5)', diceProblem(5))
 console.log('diceProblem(6)', diceProblem(6))
+
+function diceProblem2(num) {
+  if (!Number.isInteger(num)) throw new TypeError("num must be an integer");
+  if (num < 1 || num > 6) throw new RangeError("num must be between 1 and 6");
+  return 7 - num;
+}
+
+console.log('diceProblem2(5)', diceProblem2(5))
+console.log('diceProblem2(6)', diceProblem2(6))
