@@ -11,4 +11,4 @@ function findOddNumber(arr){
     
 }
 
-console.log(findOddNumber([21,45,67,53,89,24, 4,8]))
+console.log(findOddNumber([21,45,67,53,89,24,4,8]))

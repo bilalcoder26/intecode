@@ -11,7 +11,7 @@ function removeDuplicates(arr){
             result.push(arr[i]);
         }
     }
-    // console.log(uniqueNum)
+    console.log(uniqueNum)
 
     return result;
 }

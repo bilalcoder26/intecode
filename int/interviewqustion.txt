@@ -23,7 +23,7 @@
 23	Arrow functions
 24	Function defenition, function expression, anonymus functions
 25	Stack memory vs heap memory
-26	what is temporal ded zone
+26	what is temporal dead zone
 27	Promises and async await
 28	Event loop, Call stack, task queue, Microtask queue
 29	What is Destructuring

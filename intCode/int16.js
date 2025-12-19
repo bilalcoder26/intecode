@@ -12,21 +12,21 @@
 // console.log(printStringWithDelay("Bilal", 2000))
 
 
-function printStringWithDelay(str) {
-    let i = 0;
+// function printStringWithDelay(str) {
+//     let i = 0;
 
-    function printChar() {
-        if (i < str.length) {
-            // console.log(str[i]);
-            i++;
-            setTimeout(printChar, 1000); // Call the function again after 1 second
-        }
-    }
+//     function printChar() {
+//         if (i < str.length) {
+//             console.log(str[i]);
+//             i++;
+//             setTimeout(printChar, 1000); // Call the function again after 1 second
+//         }
+//     }
 
-    printChar();
-}
+//     printChar();
+// }
 
-printStringWithDelay("bilal")
+// printStringWithDelay("bilal")
 
 function printStringWithDelay(str) {
     return new Promise((resolve) => {
@@ -46,9 +46,9 @@ function printStringWithDelay(str) {
     });
   }
   
-  async function printDelayedString(str) { // needed to use await keyword
-      await printStringWithDelay(str)
-      console.log("String printed with delay using Promise")
-  }
+  // async function printDelayedString(str) { // needed to use await keyword
+  //     await printStringWithDelay(str)
+  //     console.log("String printed with delay using Promise")
+  // }
   
-  printDelayedString("bilal");
+  // printDelayedString("bilal");

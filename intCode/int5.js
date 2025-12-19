@@ -7,7 +7,7 @@ const list = [
   
   const output = list.reduce((acc, item) => {
     // If the group already exists, add the price, otherwise initialize it
-    acc[item.group] = (acc[item.group] || 0) + item.price;
+    acc[item.group] = (acc[item.group] ?? 0) + item.price;
     return acc;
   }, {});
   console.log(output)

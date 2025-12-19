@@ -19,7 +19,7 @@ for(let i=1;i<=5;i++){
 function printNumbers(start, end = 1) {
     if (end > start) return; // Base condition to stop recursion
     console.log(Array.from({ length: end }, (_, i) => start - i).join(''));
-    printNumbers(start, end + 1); // Recursive call
+    return printNumbers(start, end + 1); // Recursive call
 }
 printNumbers(7);
 

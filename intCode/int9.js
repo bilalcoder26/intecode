@@ -15,3 +15,12 @@ const data = [
 
   console.log(uniqueData)
   
+  const seen = new Set();
+
+const uniqueDataBetterway = data.filter(item => {
+  if (seen.has(item.value)) return false;
+  seen.add(item.value);
+  return true;
+});
+
+console.log(uniqueDataBetterway);
