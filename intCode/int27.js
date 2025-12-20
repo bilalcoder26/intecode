@@ -1,7 +1,7 @@
 // hcl
 
 // [2,5,4,6,7,3] => [[2,5],[4,3],[7]]
-// bad way of doing thsi because and i done his way in interview it only check adject pari only
+// bad way of doing thsi because and i done his way in interview it only check adject pari only(worng way)
 function multiDem(arr){
     if(!arr.length) return
     let result =[]
@@ -45,4 +45,31 @@ console.log(multiDem2([2, 5, 4, 6, 7, 3]));
 // Output: [[2, 5], [4, 3], [7]]
  
 // Output: [[2, 5], [4, 3], [7]]
+
+//more better approach with set 
+
+function multiPariedDemArr(arr){
+    if(!arr || arr.length ===0) return [];
+    let result =[];
+    let seen = new Set();
+    for(let num of arr){
+        const complement = 7 - num;
+        if(seen.has(complement)){
+            result.push([complement,num]);
+            seen.delete(complement);
+
+        }else if(num === 7){
+            result.push([7]);
+
+        }
+        else{
+            seen.add(num);
+
+        }
+
+    }
+    return result
+}
+
+console.log(multiPariedDemArr([2,5,4,6,7,3]))
 

@@ -1,5 +1,5 @@
 function printNaturalNum(n){
-    if(n === 10 ) return
+    if(n === 11 ) return
     //base case
     console.log(n)
     return printNaturalNum(n+1)

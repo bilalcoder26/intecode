@@ -4,6 +4,7 @@
         if(!arr.length) return []
         let result =[];
         arr.forEach((element) => {
+            console.log('ele',element);
             if(Array.isArray(element)){
                 result.push(...convertSingleArr(element))
 
