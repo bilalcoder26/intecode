@@ -33,9 +33,9 @@ function removeDuplicate(arr){
     return result
 }
 
-// console.log(removeDuplicate([2, 2, 2, 2, 2]))
-// console.log(removeDuplicate([1, 2, 2, 3, 4, 4, 4, 5, 5]))
-// console.log(removeDuplicate( [1, 2, 3]))
+console.log(removeDuplicate([2, 2, 2, 2, 2]))
+console.log(removeDuplicate([1, 2, 2, 3, 4, 4, 4, 5, 5]))
+console.log(removeDuplicate( [1, 2, 3,2,4,3]))
 // console.log(removeDuplicate([1,3, 2, 6, 3, 4, 4, 6, 5, 5]))
 
 
@@ -50,4 +50,4 @@ function removeDuplicate2(arr){
     return [...num];
 }
 
-console.log(removeDuplicate2([1,3, 2, 6, 3, 4, 4, 6, 5, 5]))
+// console.log(removeDuplicate2([1,3, 2, 6, 3, 4, 4, 6, 5, 5]))

@@ -42,12 +42,13 @@ console.log('pp',missingNumber2(array))
 //most optimalWay of doing using --> set
 
 function missingNumber3(arr){
-    if(!arr || !arr.length === 0) return null
+    if(!arr || arr.length === 0) return null
 
     let maxNum = Math.max(...arr);
     let minNum = Math.min(...arr);
-    const num = new Set(...arr);
+    const num = new Set(arr);
     for(let i=minNum;i<=maxNum;i++){
+        // console.log(`${!num.has(i)} ${i}`);
         if(!num.has(i)){
             return i;
         }
@@ -56,4 +57,4 @@ function missingNumber3(arr){
 
 
 }
-console.log('using set method',missingNumber2(array))
+console.log('using set method',missingNumber3(array))
