@@ -21,6 +21,20 @@ Output: [0,1]
 */
 
 function twoSum(nums, target){
+    /*
+    Brute force appraoch
+    
+    if(!nums.length) return [];
+    for(let i=0;i<nums.length;i++){
+        for(let j=i+1;j<nums.length;j++){
+            if(nums[i] + nums[j] === target){
+                return [i,j];
+            }
+        }
+
+    }
+    return []
+    */
     if(!nums.length) return []
     const indexValue = new Map();
     for(let i=0;i<nums.length;i++){
