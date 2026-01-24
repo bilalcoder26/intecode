@@ -46,9 +46,9 @@ function printStringWithDelay(str) {
     });
   }
   
-  // async function printDelayedString(str) { // needed to use await keyword
-  //     await printStringWithDelay(str)
-  //     console.log("String printed with delay using Promise")
-  // }
+  async function printDelayedString(str) { // needed to use await keyword
+      await printStringWithDelay(str)
+      console.log("String printed with delay using Promise")
+  }
   
-  // printDelayedString("bilal");
+  printDelayedString("bilal");
