@@ -1,0 +1,90 @@
+.container{
+    display: flex;
+    border: 2px solid black;
+    padding: 10px;
+}
+.container div{
+    background-color: lightblue;
+    border: 1px solid blue;
+    padding: 20px;
+    margin: 5px;
+}
+.container_row{
+    display: flex;
+    flex-direction: column;
+    border: 2px solid black;
+    padding: 10px;
+}
+
+.container_row div{
+    background-color: lightblue;
+    border: 1px solid blue;
+    padding: 20px;
+    margin: 5px;
+    width : 100px;
+    align-items: center;
+}
+
+.container_wrap{
+    display: flex;
+    flex-wrap: wrap;
+    border: 2px solid black;
+    padding: 10px;
+}
+
+.container_wrap div{
+    background-color: lightblue;
+    border: 1px solid blue;
+    padding: 20px;
+    margin: 5px;
+    width : 100px;
+    text-align: center;
+}
+
+.container_justify{
+    display: flex;
+    justify-content: flex-start;
+    border: 2px solid black;
+    padding: 10px;
+}
+
+.container_justify div{
+    background-color: lightblue;
+    border: 1px solid blue;
+    padding: 20px;
+    margin: 5px;
+    width : 100px;
+    text-align: center;
+}
+
+.container_space{
+    display: flex;
+    justify-content: space-around;
+    border: 2px solid black;
+    padding: 10px;
+}
+
+.container_space div{
+    background-color: lightblue;
+    border: 1px solid blue;
+    padding: 20px;
+    margin: 5px;
+    width : 100px;
+    text-align: center;
+}
+
+.container_space-between{
+    display: flex;
+    justify-content: space-between ;
+    border: 2px solid black;
+    padding: 10px;
+}
+
+.container_space-between div{
+    background-color: lightblue;
+    border: 1px solid blue;
+    padding: 20px;
+    margin: 5px;
+    width : 100px;
+    text-align: center;
+}
