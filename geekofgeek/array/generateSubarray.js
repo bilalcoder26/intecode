@@ -13,14 +13,16 @@ Output: [ [1], [1, 2], [2] ]
 function generateSubarray(arr){
     let result =[];
     for(let i=0;i<arr.length;i++){
+        console.log("outer loop ", i)
         for(let j=i;j<arr.length;j++){
+            console.log('innerloop index--->', j, " element --->", arr[j])
             result.push(arr.slice(i,j+1))
         }
     }
     return result;
 
 }
-console.log('dubloop, ',generateSubarray([1, 2, 3]))
+// console.log('dubloop, ',generateSubarray([1, 2, 3]))
 
 function generateSubarrayOptimal(arr){
     let result = [];
@@ -28,6 +30,7 @@ function generateSubarrayOptimal(arr){
         let subarray = [];
         for(i=index;i<arr.length;i++){
             subarray.push(arr[i])
+            console.log('subArray', subarray)
             result.push([...subarray])
         }
     })

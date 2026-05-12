@@ -1,0 +1,108 @@
+What Are Meta Tags?
+Meta tags are snippets of text that describe a webpage's content; they don't appear on the page itself 
+but only in the page's code (HTML). Think of them as "data about data" – they provide metadata about the HTML document.
+
+Browsers, search engines (like Google, Bing), and social media platforms use this metadata to understand 
+how to handle and display your page.
+
+Where Are Meta Tags Located?
+Meta tags live inside the <head> section of an HTML document, typically near the top.
+
+The Most Important Meta Tags & Their Attributes
+Meta tags use attributes to define their purpose and value. The main attributes are:
+
+name – specifies the type of metadata (e.g., "description", "author")
+
+content – provides the actual value/data
+
+charset – defines character encoding
+
+http-equiv – simulates HTTP header responses
+
+---------------------------------------------
+
+1. Charset Meta Tag (Character Encoding)
+
+<meta charset="UTF-8">
+
+Purpose: Tells the browser which character set to use.
+
+Why critical: UTF-8 supports almost all characters from every language. Without it, 
+special characters (like é, ñ, 你) may display as gibberish.
+
+Best practice: Always place this as the first meta tag.
+
+
+---------------------------------------------
+
+2. Description Meta Tag (For Search Engines)
+html
+<meta name="description" content="A clear, concise summary of this webpage, typically 150-160 characters">
+Purpose: Summarizes the page content.
+
+Where it appears: Often shown directly below the page title in Google search results.
+
+SEO impact: Not a direct ranking factor, but a well-written description increases click-through rate (CTR).
+
+Length limit: ~150-160 characters (Google may truncate longer ones).
+
+---------------------------------------------
+
+3. Viewport Meta Tag (For Mobile Responsiveness)
+html
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+Purpose: Controls how the page scales and displays on different screen sizes.
+
+Why critical: Without this, mobile browsers assume a ~980px wide desktop layout and shrink it, making text tiny.
+
+Common content values:
+
+width=device-width – match screen width in CSS pixels
+
+initial-scale=1.0 – no initial zoom
+
+user-scalable=yes/no – allow/prevent zooming (use cautiously)
+
+
+---------------------------------------------
+
+4. Robots Meta Tag (Search Engine Crawling)
+html
+<meta name="robots" content="index, follow">
+Purpose: Gives instructions to search engine crawlers.
+
+Common directives:
+
+index – allow this page to appear in search results
+
+noindex – block this page from search results
+
+follow – follow links on this page
+
+nofollow – do not follow links
+
+noarchive – prevent showing a cached link
+
+
+Example to hide a page from Google:
+
+html
+<meta name="robots" content="noindex, nofollow">
+You can also target specific crawlers:
+
+html
+<meta name="googlebot" content="noindex">
+<meta name="bingbot" content="index, follow">
+
+
+Scenario	Meta Tag You Need
+Special characters display correctly --->	<meta charset="UTF-8">
+Make site mobile-friendly	------->    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+Control search engine crawling	-------->   <meta name="robots" content="index, follow">
+Improve click-through from search results ----->   	<meta name="description" content="...">
+Block a page from search results -----> 	<meta name="robots" content="noindex">
+Control how your link looks on Facebook	-----> Open Graph tags (og:title, og:image, etc.)
+Control how your link looks on Twitter ----->	Twitter Card tags
+
+
+

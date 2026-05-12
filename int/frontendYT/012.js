@@ -41,6 +41,12 @@ Correcting the Behavior
 If you want to ensure Human behaves correctly, even when new is omitted, 
 you can explicitly check for new usage inside the function:
 
+
+
+
+
+
+*/
 function Human(fname, lname) {
     if (!(this instanceof Human)) {
         return new Human(fname, lname);
@@ -49,13 +55,8 @@ function Human(fname, lname) {
     this.lastName = lname;
 }
 
-const MrX = new Human("MR.", "X"); // Works with `new`
-const Rock = Human("The", "rock"); // Also works without `new`
+const MrX1 = new Human("MR.", "X"); // Works with `new`
+const Rock2 = Human("The", "rock"); // Also works without `new`
 
-console.log(MrX); // { firstName: 'MR.', lastName: 'X' }
-console.log(Rock); // { firstName: 'The', lastName: 'rock' }
-
-
-
-
-*/
+console.log(MrX1); // { firstName: 'MR.', lastName: 'X' }
+console.log(Rock2); // { firstName: 'The', lastName: 'rock' }
