@@ -1,6 +1,6 @@
 // [1,4,2,6,7,9] => [3,5,8]
 
-function findMissingNumber(arr){
+function findMissingNumberArray(arr){
     let minNumber = Math.min(...arr)
     let maxNumber = Math.max(...arr)
     let numSet = new Set(arr);
@@ -17,4 +17,8 @@ function findMissingNumber(arr){
 
 }
 
-console.log(findMissingNumber([1,4,2,6,7,9]))
+
+
+console.log(findMissingNumberArray([1,4,2,6,7,9]))
+
+// console.log(findMissingNumberOptimized())

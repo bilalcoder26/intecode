@@ -1,0 +1,353 @@
+How to implement retries in Node.js
+
+Retries are used when an operation fails temporarily (transient failure), such as:
+
+* Network glitches
+* Temporary database issues
+* External API timeouts
+* Service unavailable (HTTP 503)
+
+Instead of failing immediately:
+
+Request
+   |
+Fail
+   |
+Retry
+   |
+Success ✅
+
+---
+
+# Simple Retry Example
+
+async function fetchData() {
+    const response = await fetch(
+        'https://api.example.com/data'
+    );
+
+    if (!response.ok) {
+        throw new Error('Request failed');
+    }
+
+    return response.json();
+}
+
+async function retry(fn, retries) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            console.log(`Attempt ${i + 1} failed`);
+
+            if (i === retries - 1) {
+                throw err;
+            }
+        }
+    }
+}
+
+retry(fetchData, 3)
+    .then(console.log)
+    .catch(console.error);
+
+### Flow
+
+Attempt 1 -> Fail
+Attempt 2 -> Fail
+Attempt 3 -> Success
+
+---
+
+# Retry with Delay
+
+Retrying immediately can make things worse.
+
+Fail
+ |
+Wait
+ |
+Retry
+
+Helper:
+
+function sleep(ms) {
+    return new Promise(resolve =>
+        setTimeout(resolve, ms)
+    );
+}
+
+Implementation:
+
+async function retry(fn, retries, delay) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (i === retries - 1) {
+                throw err;
+            }
+
+            await sleep(delay);
+        }
+    }
+}
+
+Usage:
+
+await retry(fetchData, 3, 1000);
+
+Waits 1 second between retries.
+
+---
+
+# Exponential Backoff (Recommended)
+
+Instead of:
+
+1s
+1s
+1s
+
+Use:
+
+1s
+2s
+4s
+8s
+
+This prevents overwhelming a struggling service.
+
+async function retry(fn, retries) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (i === retries - 1) {
+                throw err;
+            }
+
+            const delay = Math.pow(2, i) * 1000;
+
+            console.log(
+                `Retrying in ${delay}ms`
+            );
+
+            await sleep(delay);
+        }
+    }
+}
+
+### Timeline
+
+Attempt 1 -> Fail
+Wait 1s
+
+Attempt 2 -> Fail
+Wait 2s
+
+Attempt 3 -> Fail
+Wait 4s
+
+Attempt 4 -> Success
+
+---
+
+# Exponential Backoff with Jitter
+
+In distributed systems, many clients may retry simultaneously.
+
+Without jitter:
+
+Client A -> Retry after 2s
+Client B -> Retry after 2s
+Client C -> Retry after 2s
+
+This can create a retry storm.
+
+Add randomness:
+
+const delay =
+    Math.pow(2, attempt) * 1000 +
+    Math.random() * 1000;
+
+Example:
+
+Client A -> 2.3s
+Client B -> 2.8s
+Client C -> 2.1s
+
+Retries become distributed.
+
+---
+
+# Retry Only for Retryable Errors
+
+Do not retry every error.
+
+### Retry
+
+429 Too Many Requests
+500 Internal Server Error
+502 Bad Gateway
+503 Service Unavailable
+504 Gateway Timeout
+Network Timeout
+
+### Don't Retry
+
+400 Bad Request
+401 Unauthorized
+403 Forbidden
+404 Not Found
+Validation Errors
+
+Example:
+
+if (
+    error.response?.status >= 500
+) {
+    // Retry
+}
+
+---
+
+# Axios Retry Example
+
+Using [Axios Retry](https://github.com/softonic/axios-retry?utm_source=chatgpt.com)
+
+Install:
+
+npm install axios axios-retry
+
+const axios = require('axios');
+const axiosRetry = require('axios-retry');
+
+axiosRetry(axios, {
+    retries: 3,
+    retryDelay: axiosRetry.exponentialDelay
+});
+
+const response =
+    await axios.get(
+        'https://api.example.com'
+    );
+
+---
+
+# Retry + Circuit Breaker
+
+A common production pattern.
+
+API Call
+   |
+ Retry 3 Times
+   |
+Still Fails
+   |
+Circuit Breaker Opens
+
+This avoids endless retries against an unhealthy service.
+
+---
+
+# Retry Database Connection
+
+async function connectDB() {
+    try {
+        await mongoose.connect(DB_URL);
+    } catch (err) {
+        console.log('Retrying DB...');
+        setTimeout(connectDB, 5000);
+    }
+}
+
+Useful during startup when the database is temporarily unavailable.
+
+---
+
+# Generic Reusable Utility
+
+async function retry(
+    operation,
+    {
+        retries = 3,
+        delay = 1000
+    } = {}
+) {
+    let lastError;
+
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await operation();
+        } catch (err) {
+            lastError = err;
+
+            if (i < retries - 1) {
+                await sleep(delay);
+            }
+        }
+    }
+
+    throw lastError;
+}
+
+Usage:
+
+const result = await retry(
+    () => fetchData(),
+    {
+        retries: 5,
+        delay: 2000
+    }
+);
+
+---
+
+# Best Practices
+
+✅ Use exponential backoff
+
+✅ Add jitter
+
+✅ Retry only transient failures
+
+✅ Set maximum retry count
+
+✅ Combine with timeouts
+
+✅ Combine with circuit breakers
+
+✅ Log retry attempts
+
+❌ Don't retry forever
+
+❌ Don't retry validation errors
+
+❌ Don't retry non-idempotent operations blindly (e.g., charging a credit card twice)
+
+---
+
+# Idempotency Consideration
+
+Retries are safest for idempotent operations:
+
+GET /users/1
+PUT /users/1
+DELETE /users/1
+
+Be careful with:
+
+POST /payments
+
+A retry could create duplicate payments unless you use idempotency keys.
+
+---
+
+# Interview Answer
+
+> Retries are used to handle transient failures such as network issues, timeouts, or temporary service outages. 
+In Node.js, retries can be implemented using loops, recursive functions, or libraries like Axios Retry. 
+The recommended approach is exponential backoff with jitter, where the delay increases after each failed attempt 
+to reduce load on the failing service. Retries should only be applied to retryable errors (e.g., 5xx responses, timeouts) 
+and are often combined with timeouts, idempotency, and circuit breakers for resilient system design.

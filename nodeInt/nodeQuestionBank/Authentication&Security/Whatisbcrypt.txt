@@ -1,0 +1,220 @@
+What is bcrypt?
+### What is bcrypt?
+
+**bcrypt** is a password hashing algorithm used to securely store passwords in a database.
+
+Instead of storing the actual password:
+
+Password: admin123
+
+bcrypt converts it into a one-way hash:
+
+$2b$10$E6rjY6nV6hI1sF4n...
+
+If the database is compromised, attackers cannot directly see the original passwords.
+
+---
+
+## Why not store passwords as plain text?
+
+❌ Bad Practice
+
+{
+  email: "user@gmail.com",
+  password: "admin123"
+}
+
+If someone gains database access, they immediately know every user's password.
+
+---
+
+## How bcrypt works
+
+### 1. User enters password
+
+admin123
+
+### 2. bcrypt generates a salt
+
+A **salt** is a random value added to the password before hashing.
+
+Example:
+
+admin123 + randomSalt
+
+### 3. bcrypt creates the hash
+
+$2b$10$E6rjY6nV6hI1sF4n...
+
+This hash is stored in the database.
+
+---
+
+## What is Salt?
+
+Without salt:
+
+admin123 → ABC123
+admin123 → ABC123
+
+Two users with the same password would have identical hashes.
+
+With salt:
+
+admin123 → XYZ111
+admin123 → PQR222
+
+Even the same password produces different hashes because each user gets a unique salt.
+
+This helps prevent **rainbow table attacks**.
+
+---
+
+## Installing bcrypt
+
+npm install bcrypt
+
+---
+
+## Hashing a Password
+
+### During Registration
+
+const bcrypt = require("bcrypt");
+
+const password = "admin123";
+
+const hashedPassword = await bcrypt.hash(password, 10);
+
+console.log(hashedPassword);
+
+Output:
+
+$2b$10$R1aZ6...
+
+Store this in the database:
+
+{
+  email: "user@gmail.com",
+  password: "$2b$10$R1aZ6..."
+}
+
+---
+
+## Verifying Password During Login
+
+User enters:
+
+admin123
+
+Database contains:
+
+$2b$10$R1aZ6...
+
+Verification:
+
+const isMatch = await bcrypt.compare(
+  "admin123",
+  user.password
+);
+
+if (isMatch) {
+  console.log("Login Success");
+}
+
+Output:
+
+Login Success
+
+---
+
+## What does `10` mean?
+
+bcrypt.hash(password, 10);
+
+The second parameter is the **cost factor (salt rounds)**.
+
+bcrypt.hash(password, 8);
+bcrypt.hash(password, 10);
+bcrypt.hash(password, 12);
+
+Higher rounds:
+
+✅ More secure
+❌ More CPU time
+
+Typical values:
+
+| Rounds | Usage                      |
+| ------ | -------------------------- |
+| 8      | Development                |
+| 10     | Most applications          |
+| 12+    | High-security applications |
+
+---
+
+## Why bcrypt is One-Way
+
+Hashing:
+
+admin123
+   ↓
+Hash
+   ↓
+$2b$10$abcxyz...
+
+You cannot reverse:
+
+$2b$10$abcxyz...
+   ↓
+admin123 ❌
+
+This is why login uses `compare()` instead of decrypting the password.
+
+---
+
+## bcrypt vs Encryption
+
+| bcrypt (Hashing)                 | Encryption              |
+| -------------------------------- | ----------------------- |
+| One-way                          | Two-way                 |
+| Cannot recover original password | Can decrypt with key    |
+| Used for passwords               | Used for sensitive data |
+| compare()                        | decrypt()               |
+
+Passwords should be **hashed**, not encrypted.
+
+---
+
+## Typical Login Flow
+
+```text
+Register
+   ↓
+Password
+   ↓
+bcrypt.hash()
+   ↓
+Store hash in DB
+
+-------------------
+
+Login
+   ↓
+User enters password
+   ↓
+bcrypt.compare()
+   ↓
+Match?
+   ↓
+Generate JWT
+```
+
+---
+
+### Interview Answer
+
+> bcrypt is a password hashing library used to securely store passwords. 
+It hashes passwords using a unique salt and a configurable cost factor, making brute-force attacks much harder.
+ During registration, I hash the password using `bcrypt.hash()`, and during login, I verify it using `bcrypt.compare()`. 
+ Since bcrypt is a one-way hashing algorithm, the original password cannot be recovered from the stored hash.

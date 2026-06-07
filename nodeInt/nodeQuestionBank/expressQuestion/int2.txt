@@ -1,0 +1,170 @@
+Difference between app.use() and app.get()
+This is a very common Express interview question.
+
+# `app.use()` vs `app.get()`
+
+| Feature        | `app.use()`                                  | `app.get()`          |
+| -------------- | -------------------------------------------- | -------------------- |
+| Purpose        | Register middleware                          | Handle GET requests  |
+| HTTP Method    | All methods (GET, POST, PUT, DELETE, etc.)   | Only GET             |
+| Route Matching | Prefix matching                              | Exact route matching |
+| `next()`       | Usually used                                 | Optional             |
+| Use Case       | Logging, Authentication, Validation, Parsing | Returning data/pages |
+
+---
+
+## 1. `app.use()`
+
+Used to register middleware that runs before route handlers.
+
+app.use((req, res, next) => {
+    console.log("Middleware Executed");
+    next();
+});
+```
+
+### Runs for ALL requests
+
+GET /users
+POST /users
+PUT /users/1
+DELETE /users/1
+
+Output:
+
+Middleware Executed
+
+for every request.
+
+---
+
+## 2. `app.get()`
+
+Handles only **GET** requests.
+
+app.get('/users', (req, res) => {
+    res.send("Users List");
+});
+
+### Request
+
+GET /users
+
+Response:
+
+Users List
+
+### Request
+
+POST /users
+
+Response:
+
+Cannot POST /users
+
+because `app.get()` only handles GET requests.
+
+---
+
+# Route Matching Difference
+
+## `app.use('/users', ...)`
+
+app.use('/users', (req, res, next) => {
+    console.log("Users Middleware");
+    next();
+});
+
+Matches:
+
+/users
+/users/1
+/users/profile
+/users/123/orders
+
+Because `app.use()` performs **prefix matching**.
+
+---
+
+## `app.get('/users', ...)`
+
+app.get('/users', (req, res) => {
+    res.send("Users");
+});
+
+Matches only:
+
+GET /users
+
+Does not match:
+
+GET /users/1
+GET /users/profile
+
+unless separate routes are defined.
+
+---
+
+# Common Real-World Example
+
+```javascript
+const express = require('express');
+const app = express();
+
+// Middleware
+app.use(express.json());
+
+// Authentication Middleware
+app.use((req, res, next) => {
+    console.log("Checking Auth");
+    next();
+});
+
+// Route Handler
+app.get('/profile', (req, res) => {
+    res.send("Profile Data");
+});
+```
+
+### Flow for GET /profile
+
+```text
+Request
+   ↓
+express.json()
+   ↓
+Auth Middleware
+   ↓
+app.get('/profile')
+   ↓
+Response
+```
+
+---
+
+# Can `app.use()` Handle Requests?
+
+Yes.
+
+app.use('/hello', (req, res) => {
+    res.send("Hello");
+});
+
+This will respond to:
+
+GET /hello
+POST /hello
+PUT /hello
+DELETE /hello
+```
+
+because `app.use()` is not tied to a specific HTTP method.
+
+---
+
+# Interview Answer
+
+> `app.use()` is used to register middleware and works for all HTTP methods. 
+It uses prefix-based route matching and is commonly used for logging, authentication, validation, and body parsing.
+ `app.get()` is a route handler that responds only to GET requests for a specific route. Middleware registered with 
+ `app.use()` typically executes before `app.get()` route handlers.

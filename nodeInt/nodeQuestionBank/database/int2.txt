@@ -1,0 +1,337 @@
+ORM vs ODM
+This is a very common interview question, especially when discussing **SQL vs NoSQL databases**.
+
+# ORM vs ODM
+
+| Feature        | ORM                          | ODM                     |
+| -------------- | ---------------------------- | ----------------------- |
+| Full Form      | Object Relational Mapping    | Object Document Mapping |
+| Used With      | Relational Databases         | Document Databases      |
+| Database Type  | SQL                          | NoSQL                   |
+| Maps Object To | Tables                       | Documents               |
+| Examples       | Hibernate, Sequelize, Prisma | Mongoose                |
+| Query Language | SQL                          | MongoDB Queries         |
+| Schema         | Fixed Tables                 | Flexible Documents      |
+
+---
+
+# ORM (Object Relational Mapping)
+
+ORM maps programming language objects to relational database tables.
+
+### Database Table
+
+```text
+Users
++----+--------+------------------+
+| id | name   | email            |
++----+--------+------------------+
+| 1  | Bilal  | bilal@gmail.com  |
++----+--------+------------------+
+```
+
+### Java/Node Object
+
+```javascript
+{
+    id: 1,
+    name: "Bilal",
+    email: "bilal@gmail.com"
+}
+```
+
+ORM converts between:
+
+```text
+Object
+   ⇄
+Table Row
+```
+
+---
+
+## Without ORM
+
+Using raw SQL:
+
+```javascript
+const result = await pool.query(
+    'SELECT * FROM users WHERE id = $1',
+    [1]
+);
+```
+
+---
+
+## With ORM
+
+Example using Prisma:
+
+```javascript
+const user = await prisma.user.findUnique({
+    where: {
+        id: 1
+    }
+});
+```
+
+ORM generates SQL internally.
+
+---
+
+## Popular ORMs
+
+### Java
+
+* Hibernate
+* Spring Data JPA
+
+### Node.js
+
+* Prisma
+* Sequelize
+* TypeORM
+
+---
+
+# ODM (Object Document Mapping)
+
+ODM maps objects to NoSQL documents.
+
+Most commonly used with **MongoDB**.
+
+---
+
+### MongoDB Document
+
+```json
+{
+  "_id": "123",
+  "name": "Bilal",
+  "email": "bilal@gmail.com"
+}
+```
+
+---
+
+### JavaScript Object
+
+```javascript
+{
+    name: "Bilal",
+    email: "bilal@gmail.com"
+}
+```
+
+ODM converts between:
+
+```text
+Object
+   ⇄
+JSON Document
+```
+
+---
+
+## Without ODM
+
+Using MongoDB Driver:
+
+```javascript
+const user =
+    await db.collection("users")
+            .findOne({ _id: id });
+```
+
+---
+
+## With ODM
+
+Using Mongoose:
+
+```javascript
+const user =
+    await User.findById(id);
+```
+
+ODM handles conversion automatically.
+
+---
+
+# Example Comparison
+
+## ORM (PostgreSQL)
+
+Table:
+
+```sql
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100)
+);
+```
+
+Entity:
+
+```javascript
+class User {
+    id;
+    name;
+}
+```
+
+ORM maps:
+
+```text
+User Object
+      ⇄
+users Table
+```
+
+---
+
+## ODM (MongoDB)
+
+Collection:
+
+```json
+{
+  "_id": "123",
+  "name": "Bilal"
+}
+```
+
+Schema:
+
+```javascript
+const userSchema =
+    new mongoose.Schema({
+        name: String
+    });
+```
+
+ODM maps:
+
+```text
+User Object
+      ⇄
+MongoDB Document
+```
+
+---
+
+# Advantages of ORM
+
+### Less SQL Writing
+
+```javascript
+await User.findAll();
+```
+
+instead of:
+
+```sql
+SELECT * FROM users;
+```
+
+---
+
+### Database Abstraction
+
+Switching databases becomes easier.
+
+---
+
+### Relationship Handling
+
+```text
+User
+  ↓
+Orders
+  ↓
+Payments
+```
+
+ORMs provide joins and associations.
+
+---
+
+### Migrations
+
+Manage schema changes through code.
+
+---
+
+# Advantages of ODM
+
+### Schema Validation
+
+```javascript
+const userSchema = new Schema({
+    email: {
+        type: String,
+        required: true
+    }
+});
+```
+
+---
+
+### Middleware Hooks
+
+```javascript
+userSchema.pre('save', function() {
+    console.log('Before save');
+});
+```
+
+---
+
+### Easy Document Manipulation
+
+```javascript
+await User.create({
+    name: 'Bilal'
+});
+```
+
+---
+
+# When to Use ORM?
+
+Use ORM when working with:
+
+* PostgreSQL
+* MySQL
+* Oracle Database
+* Microsoft SQL Server
+
+Especially when:
+
+* Strong relationships exist
+* ACID transactions are important
+* Complex joins are needed
+
+---
+
+# When to Use ODM?
+
+Use ODM when working with:
+
+* MongoDB
+
+Especially when:
+
+* Flexible schemas are needed
+* Data is document-oriented
+* Rapid development is desired
+
+---
+
+# Interview Answer
+
+> ORM (Object Relational Mapping) maps application objects to relational database tables 
+and is used with SQL databases such as PostgreSQL and MySQL. Examples include Hibernate, Prisma, and Sequelize. 
+ODM (Object Document Mapping) maps application objects to document-based databases such as MongoDB. 
+Mongoose is a popular ODM. The key difference is that ORM works with tables and relations, 
+while ODM works with JSON-like documents and collections.

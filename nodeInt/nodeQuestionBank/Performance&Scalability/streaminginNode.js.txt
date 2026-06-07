@@ -1,0 +1,320 @@
+What is streaming in Node.js?
+
+Streaming is a technique in Node.js that allows you to process data **piece by piece (chunks)** 
+instead of loading the entire data into memory at once.
+
+Think of it like drinking water through a straw:
+
+* ❌ Without streaming: You try to drink the entire bottle at once.
+* ✅ With streaming: You drink it little by little.
+
+---
+
+## Why Do We Need Streams?
+
+Suppose you have a **2 GB file**.
+
+### Without Streaming
+
+const fs = require('fs');
+
+const data = fs.readFileSync('large-file.txt');
+
+What happens?
+
+File (2 GB)
+    |
+Load Entire File into RAM
+    |
+Process
+
+Problems:
+
+* High memory usage
+* Slower performance
+* Possible OutOfMemoryError
+
+---
+
+### With Streaming
+
+const fs = require('fs');
+
+const stream = fs.createReadStream('large-file.txt');
+
+File
+ |
+Chunk 1 (64 KB)
+ |
+Chunk 2 (64 KB)
+ |
+Chunk 3 (64 KB)
+ |
+...
+```
+
+Only a small portion of the file is in memory at any time.
+
+---
+
+# Real-World Examples
+
+### Video Streaming
+
+When watching a video:
+
+Netflix/Youtube
+      |
+   Stream Data
+      |
+    Browser
+
+The entire movie is not downloaded first.
+
+---
+
+### File Download
+
+Server
+  |
+Chunks
+  |
+Client
+
+The user starts receiving data immediately.
+
+---
+
+### Database Exports
+
+Exporting millions of records:
+
+Database
+   |
+Stream Records
+   |
+CSV File
+
+Instead of loading all records into memory.
+
+---
+
+# Types of Streams in Node.js
+
+Node.js provides four main stream types.
+
+## 1. Readable Stream
+
+Used to read data.
+
+Examples:
+
+* Reading files
+* Receiving HTTP requests
+
+const fs = require('fs');
+
+const readable = fs.createReadStream('input.txt');
+
+readable.on('data', chunk => {
+    console.log(chunk.toString());
+});
+
+---
+
+## 2. Writable Stream
+
+Used to write data.
+
+const fs = require('fs');
+
+const writable = fs.createWriteStream('output.txt');
+
+writable.write('Hello World');
+writable.end();
+
+---
+
+## 3. Duplex Stream
+
+Can read and write.
+
+Examples:
+
+* TCP sockets
+
+Read <----> Write
+
+---
+
+## 4. Transform Stream
+
+Can modify data while streaming.
+
+Examples:
+
+* Compression
+* Encryption
+
+Input
+  |
+Transform
+  |
+Output
+
+---
+
+# Stream Events
+
+## data
+
+Triggered when a chunk arrives.
+
+stream.on('data', chunk => {
+    console.log(chunk);
+});
+
+---
+
+## end
+
+Triggered when all data is read.
+
+stream.on('end', () => {
+    console.log('Finished');
+});
+
+---
+
+## error
+
+Triggered when an error occurs.
+
+stream.on('error', err => {
+    console.error(err);
+});
+
+---
+
+# Piping Streams
+
+One of the most powerful features.
+
+Instead of manually reading and writing:
+
+Read Stream
+     |
+     v
+Write Stream
+
+Use `pipe()`.
+
+const fs = require('fs');
+
+const readStream = fs.createReadStream('input.txt');
+const writeStream = fs.createWriteStream('output.txt');
+
+readStream.pipe(writeStream);
+
+---
+
+# Example: Serving a Large File
+
+### Without Streaming
+
+app.get('/download', (req, res) => {
+    const data = fs.readFileSync('movie.mp4');
+    res.send(data);
+});
+
+Problem:
+
+* Entire file loaded into memory.
+
+---
+
+### With Streaming
+
+app.get('/download', (req, res) => {
+    const stream = fs.createReadStream('movie.mp4');
+
+    stream.pipe(res);
+});
+
+Benefits:
+
+* Low memory usage
+* Faster response
+* Better scalability
+
+---
+
+# Backpressure
+
+A common interview topic.
+
+Suppose:
+
+Source Speed = 100 MB/s
+Destination Speed = 10 MB/s
+
+Producer generates data faster than consumer can process it.
+
+Fast Producer
+      |
+      |
+Slow Consumer
+
+This can fill memory buffers.
+
+Node.js streams handle this automatically using **backpressure**.
+
+if (!stream.write(chunk)) {
+    source.pause();
+}
+
+When the buffer is drained:
+
+stream.on('drain', () => {
+    source.resume();
+});
+
+The `pipe()` method handles backpressure automatically.
+
+---
+
+# Benefits of Streaming
+
+✅ Low memory consumption
+
+✅ Faster processing
+
+✅ Efficient handling of large files
+
+✅ Better scalability
+
+✅ Supports real-time data transfer
+
+✅ Built-in backpressure handling
+
+---
+
+# Common Use Cases
+
+* File uploads
+* File downloads
+* Video streaming
+* Audio streaming
+* Log processing
+* Database exports/imports
+* Data compression
+* Real-time applications
+
+---
+
+# Interview Answer (Short)
+
+> Streaming in Node.js is a mechanism for processing data in small chunks instead of loading the entire dataset into memory. 
+Streams improve performance and reduce memory usage, making them ideal for handling large files, video/audio streaming, 
+file uploads, and real-time data processing. Node.js provides Readable, Writable, Duplex, and Transform streams, and 
+supports efficient data transfer through piping and backpressure handling.

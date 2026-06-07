@@ -1,0 +1,346 @@
+How to debug production issues?
+
+
+# Step 1: Understand the Problem
+
+First gather information:
+
+What is failing?
+When did it start?
+How many users are affected?
+Can it be reproduced?
+
+Examples:
+
+* API returning 500 errors
+* High response times
+* Memory leak
+* Database connection issues
+* CPU spike
+
+---
+
+# Step 2: Check Monitoring Dashboards
+
+Look at metrics before touching code.
+
+Monitor:
+
+* CPU usage
+* Memory usage
+* Request count
+* Error rate
+* Response time (P95/P99)
+
+Example:
+
+CPU: 95%
+Memory: 70%
+Error Rate: 20%
+
+This immediately narrows the investigation.
+
+Common tools:
+
+* [Grafana](https://grafana.com?utm_source=chatgpt.com)
+* [Prometheus](https://prometheus.io?utm_source=chatgpt.com)
+* [Datadog](https://www.datadoghq.com?utm_source=chatgpt.com)
+
+---
+
+# Step 3: Check Application Logs
+
+Logs are usually the fastest way to identify issues.
+
+Example:
+
+logger.error({
+    userId,
+    orderId,
+    error
+});
+
+Bad:
+
+console.log("Something failed");
+
+Good logs contain:
+
+* Timestamp
+* Request ID
+* User ID (if appropriate)
+* Error stack trace
+
+Example:
+
+2026-06-07 10:15:22
+RequestId=abc123
+Payment Service Timeout
+
+---
+
+# Step 4: Correlate Requests
+
+In microservices, one request may pass through multiple services.
+
+Use a correlation ID:
+
+Client
+  |
+Request-ID: xyz123
+  |
+User Service
+  |
+Order Service
+  |
+Payment Service
+
+Search logs using:
+
+xyz123
+
+and trace the entire request.
+
+---
+
+# Step 5: Identify Recent Changes
+
+Many production issues are caused by:
+
+* New deployment
+* Configuration changes
+* Database migration
+* Infrastructure changes
+
+Ask:
+
+What changed recently?
+
+Often the answer is:
+
+Issue started immediately after deployment.
+
+---
+
+# Step 6: Check External Dependencies
+
+Sometimes your code is fine.
+
+Investigate:
+
+* Database
+* Redis
+* Kafka
+* RabbitMQ
+* Third-party APIs
+
+Example:
+
+Application healthy
+Database latency = 10 seconds
+
+Root cause:
+
+Database problem
+
+not application code.
+
+---
+
+# Step 7: Debug High Latency Issues
+
+Check:
+
+### Slow Queries
+
+Example:
+
+SELECT *
+FROM users
+WHERE email='abc@gmail.com';
+
+Without index:
+
+Table Scan
+
+Solution:
+
+CREATE INDEX idx_email
+ON users(email);
+
+---
+
+### External API Delays
+
+Monitor:
+
+Payment API
+Average: 200ms
+Today: 8 seconds
+
+Could indicate:
+
+* Network issue
+* Vendor outage
+
+---
+
+# Step 8: Debug Memory Leaks
+
+Symptoms:
+
+Memory steadily increases
+GC frequency increases
+Application crashes
+
+Node.js tools:
+
+node --inspect
+
+Heap snapshots:
+
+heapdump
+
+Analyze:
+
+* Large arrays
+* Unreleased caches
+* Event listeners
+* Global variables
+
+Common leak:
+
+const cache = [];
+
+app.get("/", () => {
+    cache.push(newData);
+});
+
+Memory grows forever.
+
+---
+
+# Step 9: Debug High CPU Usage
+
+Symptoms:
+
+CPU 100%
+Response time high
+
+Use:
+
+node --prof
+
+or
+
+clinic flame
+
+Common causes:
+
+### Infinite loops
+
+while(true) {}
+
+### Heavy computation
+
+generateLargeReport();
+
+Move to:
+
+* Worker Threads
+* Background Jobs
+
+---
+
+# Step 10: Use Distributed Tracing
+
+For microservices:
+
+Gateway
+  |
+User Service
+  |
+Order Service
+  |
+Payment Service
+
+Use tracing tools:
+
+* [Jaeger](https://www.jaegertracing.io?utm_source=chatgpt.com)
+* [OpenTelemetry](https://opentelemetry.io?utm_source=chatgpt.com)
+
+This shows:
+
+Request spent:
+50ms in Gateway
+100ms in User Service
+8s in Payment Service
+
+Root cause becomes obvious.
+
+---
+
+# Step 11: Mitigate First, Fix Later
+
+Production rule:
+
+Restore service first.
+Then investigate.
+
+Possible mitigations:
+
+### Rollback
+
+Deploy previous version
+
+### Scale Up
+
+Add more instances
+
+### Disable Feature Flag
+
+Turn off problematic feature
+
+### Restart Service
+
+Temporary solution for:
+
+* Memory leak
+* Stuck connections
+
+---
+
+# Example Scenario
+
+### Problem
+
+Users report checkout failures.
+
+### Investigation
+
+1. Grafana shows error spike.
+2. Logs show timeout errors.
+3. Trace shows payment service taking 15 seconds.
+4. Payment provider status page shows outage.
+
+### Mitigation
+
+Enable fallback payment gateway.
+
+### Resolution
+
+Traffic rerouted.
+
+---
+
+# Interview Answer (2 Minutes)
+
+> When debugging production issues, I start by understanding the impact and symptoms. 
+I check monitoring dashboards for CPU, memory, error rates, and latency metrics. 
+Then I analyze application logs using request or correlation IDs to trace failing requests. 
+I verify whether any recent deployments or configuration changes could have caused the issue and 
+check external dependencies such as databases, Redis, queues, or third-party APIs. For performance problems, 
+I investigate slow queries, CPU profiling, and memory usage using tools like heap snapshots and flame graphs. 
+In a microservices environment, I use distributed tracing to identify bottlenecks across services. 
+My priority is always to mitigate the issue quickly—such as rolling back a deployment, scaling services, or 
+disabling a feature flag—and then perform a detailed root cause analysis to prevent recurrence.

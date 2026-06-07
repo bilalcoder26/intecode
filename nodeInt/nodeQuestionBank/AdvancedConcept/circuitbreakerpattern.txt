@@ -1,0 +1,371 @@
+What is circuit breaker pattern
+
+The **Circuit Breaker Pattern** is a resilience pattern used in distributed systems and microservices 
+to prevent an application from repeatedly calling a failing service.
+
+Think of it like an electrical circuit breaker in your home:
+
+Normal Operation
+      |
+Service Fails Repeatedly
+      |
+Circuit Breaker Trips
+      |
+Stop Sending Requests
+
+Instead of continuously making requests to a service that is down, the circuit breaker temporarily blocks those requests 
+and fails fast.
+
+---
+
+# Why Do We Need It?
+
+Imagine a service architecture:
+
+Client
+  |
+Order Service
+  |
+Payment Service
+
+If the Payment Service goes down:
+
+Order Service
+      |
+      |---- Request
+      |
+      |---- Timeout
+      |
+      |---- Request
+      |
+      |---- Timeout
+
+Problems:
+
+* Threads get blocked waiting for timeouts
+* CPU and memory are wasted
+* Response times increase
+* Failure can spread to other services (cascading failure)
+
+---
+
+# How Circuit Breaker Solves This
+
+Order Service
+      |
+Circuit Breaker
+      |
+Payment Service
+
+When too many failures occur:
+
+Circuit Opens
+      |
+Requests Blocked Immediately
+      |
+Fast Failure
+
+Instead of waiting for timeouts.
+
+---
+
+# Three States of a Circuit Breaker
+
+## 1. Closed State (Normal)
+
+Everything works normally.
+
+Request
+   |
+Circuit Closed
+   |
+Service
+
+All requests pass through.
+
+Success and failure counts are monitored.
+
+---
+
+## 2. Open State
+
+Too many failures occurred.
+
+Request
+   |
+Circuit Open
+   |
+Rejected Immediately
+
+No requests are sent to the downstream service.
+
+Example:
+
+{
+  "error": "Payment service unavailable"
+}
+
+This prevents wasting resources.
+
+---
+
+## 3. Half-Open State
+
+After a waiting period:
+
+Wait 30 seconds
+      |
+Half Open
+      |
+Allow Few Test Requests
+
+### If successful:
+
+Success
+   |
+Close Circuit
+
+### If failed:
+
+Failure
+   |
+Open Circuit Again
+
+---
+
+# State Transition Diagram
+
+        Success
+           ^
+           |
+           |
+      +---------+
+      | CLOSED  |
+      +---------+
+           |
+   Many Failures
+           |
+           v
+      +---------+
+      |  OPEN   |
+      +---------+
+           |
+     Timeout
+           |
+           v
+      +-----------+
+      | HALF OPEN |
+      +-----------+
+        |       |
+ Success|       |Failure
+        |       |
+        v       v
+    CLOSED    OPEN
+
+---
+
+# Example Scenario
+
+Suppose:
+
+Payment Service
+
+Failure threshold:
+
+5 failures
+
+### Requests
+
+Request 1 -> Fail
+Request 2 -> Fail
+Request 3 -> Fail
+Request 4 -> Fail
+Request 5 -> Fail
+
+Circuit opens.
+
+Next requests:
+
+Request 6 -> Blocked
+Request 7 -> Blocked
+Request 8 -> Blocked
+
+No call reaches the payment service.
+
+---
+
+# Benefits
+
+## 1. Prevents Cascading Failures
+
+Without breaker:
+
+Payment Down
+      |
+Order Service Slow
+      |
+Inventory Slow
+      |
+System Failure
+
+With breaker:
+
+Payment Down
+      |
+Circuit Open
+      |
+Order Service Still Responsive
+
+---
+
+## 2. Fast Failure
+
+Instead of:
+
+Wait 30 sec Timeout
+
+You get:
+
+Fail Immediately
+
+Better user experience.
+
+---
+
+## 3. Reduces Resource Consumption
+
+Avoids:
+
+* Unnecessary retries
+* Thread exhaustion
+* Connection exhaustion
+
+---
+
+# Circuit Breaker in Node.js
+
+A popular library is:
+
+* [Opossum](https://nodeshift.dev/opossum/?utm_source=chatgpt.com)
+
+Install:
+
+npm install opossum
+
+Example:
+
+const CircuitBreaker = require('opossum');
+
+async function paymentService() {
+    // Call external API
+}
+
+const breaker = new CircuitBreaker(paymentService, {
+    timeout: 3000,
+    errorThresholdPercentage: 50,
+    resetTimeout: 10000
+});
+
+breaker.fire()
+    .then(console.log)
+    .catch(console.error);
+
+### Configuration
+
+timeout: 3000
+
+Request timeout after 3 seconds.
+
+errorThresholdPercentage: 50
+
+Open the circuit if 50% of requests fail.
+
+resetTimeout: 10000
+
+Try again after 10 seconds.
+
+---
+
+# Fallback Mechanism
+
+Often used with circuit breakers.
+
+breaker.fallback(() => {
+    return {
+        status: "Service unavailable"
+    };
+});
+
+Instead of crashing, return a default response.
+
+---
+
+# Real-World Example
+
+Client
+  |
+API Gateway
+  |
+Order Service
+  |
+Circuit Breaker
+  |
+Payment Service
+
+If Payment Service is down:
+
+Circuit Open
+      |
+Return Cached/Fallback Response
+
+System remains operational.
+
+---
+
+# Related Patterns
+
+### Retry Pattern
+
+Fail
+ |
+Retry
+ |
+Retry
+ |
+Retry
+
+Used for temporary failures.
+
+---
+
+### Timeout Pattern
+
+Call Service
+     |
+3 Seconds
+     |
+Cancel
+
+Prevents waiting forever.
+
+---
+
+### Bulkhead Pattern
+
+Separates resources:
+
+Pool A -> Payments
+Pool B -> Inventory
+Pool C -> Notifications
+
+Failure in one area doesn't affect others.
+
+---
+
+# Interview Answer
+
+> The Circuit Breaker Pattern is a fault-tolerance pattern used in distributed systems to prevent
+ repeated calls to a failing service. It monitors failures and, after a threshold is reached, 
+ opens the circuit to stop requests from reaching the unhealthy service. The circuit breaker has three states: 
+ Closed, Open, and Half-Open. This pattern helps prevent cascading failures, reduces resource consumption, 
+ improves response times, and increases system resilience in microservice architectures.

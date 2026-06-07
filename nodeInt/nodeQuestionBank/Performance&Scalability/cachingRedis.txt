@@ -1,0 +1,321 @@
+what is caching (Redis)?
+# What is Caching?
+
+Caching is the technique of storing frequently accessed data in a fast storage layer so that future requests 
+can be served quickly without repeatedly querying the database or performing expensive computations.
+
+Without caching:
+
+Client
+   |
+Node.js
+   |
+Database
+
+Every request hits the database.
+
+With caching:
+
+Client
+   |
+Node.js
+   |
+ Redis Cache
+   |
+Database
+
+Node.js first checks Redis. If data exists, it returns immediately without querying the database.
+
+---
+
+# What is Redis?
+
+Redis (Remote Dictionary Server) is an open-source, in-memory key-value data store commonly used for:
+
+* Caching
+* Session storage
+* Message queues
+* Real-time analytics
+* Rate limiting
+
+Because Redis stores data in RAM, it is much faster than a traditional database.
+
+### Speed Comparison
+
+Redis (RAM)      -> Microseconds
+Database (Disk)  -> Milliseconds
+
+RAM access is thousands of times faster than disk access.
+
+---
+
+# Why Use Redis for Caching?
+
+Suppose you have a user profile API:
+
+GET /users/101
+
+Without cache:
+
+Request
+   |
+Node.js
+   |
+Database Query
+   |
+Response
+
+Every request hits the database.
+
+With Redis:
+
+Request
+   |
+Node.js
+   |
+Redis
+   |
+Found? ---- Yes ---> Return Data
+   |
+   No
+   |
+Database
+   |
+Save in Redis
+   |
+Response
+
+---
+
+# Cache Hit vs Cache Miss
+
+## Cache Hit
+
+Data already exists in Redis.
+
+Request
+   |
+Redis
+   |
+Data Found ✅
+
+Response is very fast.
+
+---
+
+## Cache Miss
+
+Data not found in Redis.
+
+Request
+   |
+Redis
+   |
+Not Found ❌
+   |
+Database
+   |
+Store in Redis
+
+The next request becomes a cache hit.
+
+---
+
+# Example in Node.js
+
+Install packages:
+
+npm install redis
+
+Connect to Redis:
+
+const redis = require('redis');
+
+const client = redis.createClient();
+
+client.connect();
+
+Store data:
+
+await client.set('user:101', JSON.stringify(user));
+
+Retrieve data:
+
+const user = await client.get('user:101');
+
+Delete data:
+
+await client.del('user:101');
+
+---
+
+# Real Example
+
+Without Redis:
+
+app.get('/users/:id', async (req, res) => {
+    const user = await User.findById(req.params.id);
+    res.json(user);
+});
+
+Every request queries the database.
+
+---
+
+With Redis:
+
+app.get('/users/:id', async (req, res) => {
+    const key = `user:${req.params.id}`;
+
+    const cachedUser = await client.get(key);
+
+    if (cachedUser) {
+        return res.json(JSON.parse(cachedUser));
+    }
+
+    const user = await User.findById(req.params.id);
+
+    await client.set(key, JSON.stringify(user));
+
+    res.json(user);
+});
+
+### Flow
+
+First Request:
+
+Client
+  |
+Redis -> Miss
+  |
+Database
+  |
+Redis Save
+  |
+Response
+
+Second Request:
+
+Client
+  |
+Redis -> Hit
+  |
+Response
+
+No database call.
+
+---
+
+# Setting Expiration (TTL)
+
+Cached data should not live forever.
+
+await client.set(
+    'user:101',
+    JSON.stringify(user),
+    {
+        EX: 60
+    }
+);
+
+TTL = 60 seconds
+
+Stored
+  |
+60 sec
+  |
+Auto Deleted
+
+This prevents stale data.
+
+---
+
+# Common Redis Use Cases in Node.js
+
+### 1. API Response Caching
+
+Redis
+  |
+Faster API Responses
+
+---
+
+### 2. Session Storage
+
+Instead of:
+
+const sessions = {};
+
+Store sessions in Redis.
+
+Node1
+Node2 ---> Redis
+Node3
+
+All instances can access the same session data.
+
+---
+
+### 3. Rate Limiting
+
+Track requests per user/IP.
+
+IP -> Request Count
+
+Example:
+
+100 requests/minute
+
+Store counters in Redis.
+
+---
+
+### 4. Queue Management
+
+Libraries like:
+
+* BullMQ
+* Bull
+
+Use Redis internally.
+
+API
+ |
+Queue
+ |
+Worker
+
+---
+
+# Benefits of Redis Caching
+
+✅ Faster response times
+
+✅ Reduced database load
+
+✅ Better scalability
+
+✅ Lower infrastructure costs
+
+✅ Improved user experience
+
+---
+
+# Drawbacks
+
+❌ Uses RAM (expensive compared to disk)
+
+❌ Data can become stale
+
+❌ Cache invalidation adds complexity
+
+❌ Extra infrastructure to manage
+
+---
+
+# Interview Answer
+
+> Caching is the process of storing frequently accessed data in a fast storage layer to avoid repeated database queries. 
+Redis is a popular in-memory key-value store used for caching because it provides extremely fast read and write operations. 
+In a Node.js application, Redis is commonly used for API caching, session storage, rate limiting, and queue management, 
+helping reduce database load and improve response times.

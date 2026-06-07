@@ -1,0 +1,7 @@
+Rate limiting controls how many requests a client can make to your server within a specific time window, 
+preventing abuse, DDoS attacks, and ensuring fair usage.
+
+Rate limiting restricts the number of requests a client can make within a specific time window to 
+prevent abuse and protect server resources. In Express, it is commonly implemented using express-rate-limit, 
+where limits are defined using windowMs and max. For distributed systems, counters should be stored in Redis 
+rather than application memory so that all server instances enforce the same limits consistently.

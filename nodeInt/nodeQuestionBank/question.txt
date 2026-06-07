@@ -1,0 +1,101 @@
+ ✅ 1. Core Node.js (Fundamentals)
+What is Node.js and how does it work?
+What is the event loop in Node.js?
+Explain single-threaded architecture in Node.js
+What is non-blocking I/O?
+Difference between synchronous and asynchronous code
+What are callbacks?
+What is callback hell? How to avoid it?
+What is the difference between process.nextTick() and setImmediate()?
+What is the role of libuv?
+What is REPL in Node.js?
+🔥 ✅ 2. Async Programming
+What are Promises in Node.js?
+Difference between Promise and Callback
+What is async/await?
+How does async/await work internally?
+How to handle multiple async calls in parallel?
+Difference between Promise.all, race, allSettled
+How do you handle errors in async/await?
+What is event-driven architecture?
+🔥 ✅ 3. Event Loop Deep (VERY IMPORTANT 🔥)
+Explain phases of event loop
+What is microtask queue vs callback queue?
+Order of execution: setTimeout, Promise, process.nextTick
+What happens when Node.js blocks?
+How to debug event loop blocking?
+🔥 ✅ 4. Modules & Architecture
+What is CommonJS?
+Difference between CommonJS and ES Modules
+How does require() work internally?
+What is module caching?
+Folder structure for scalable Node.js app
+MVC architecture in Node.js
+What is middleware?
+🔥 ✅ 5. Express.js (Backend Core)
+What is Express.js?
+What is middleware in Express?
+Types of middleware
+How does routing work in Express?
+Error handling in Express
+What is next()?
+How to create custom middleware
+Difference between app.use() and app.get()
+How to handle file uploads
+How to implement rate limiting
+🔥 ✅ 6. API Design (VERY IMPORTANT 🔥)
+What is REST API?
+What are best practices for REST APIs?
+Difference between PUT and PATCH
+How to version APIs
+How to handle pagination
+What is idempotency?
+How to design scalable APIs
+What is HATEOAS?
+🔥 ✅ 7. Database (MongoDB / SQL)
+How Node.js connects to databases?
+ORM vs ODM
+What is Mongoose?
+Schema vs Model
+Indexing in database
+Transactions in Node.js
+Connection pooling
+Handling large datasets
+🔥 ✅ 8. Authentication & Security
+What is JWT?
+How authentication works in Node.js
+Difference between JWT and session
+How to secure APIs
+What is bcrypt?
+How to handle password encryption
+What is CORS?
+Rate limiting and throttling
+Common vulnerabilities (XSS, CSRF, SQL Injection)
+🔥 ✅ 9. Performance & Scalability
+What is clustering in Node.js?
+How to scale Node.js application?
+What is load balancing?
+What is caching (Redis)?
+How to optimize API performance
+What is streaming in Node.js?
+How to handle memory leaks
+🔥 ✅ 10. Advanced Concepts (5+ Years 🔥)
+What are worker threads?
+Difference between worker threads and cluster
+What is backpressure in streams?
+How event loop handles heavy CPU tasks
+What is circuit breaker pattern
+How to implement retries in Node.js
+Message queues (RabbitMQ/Kafka) in Node.js
+Microservices architecture in Node.js
+🔥 ✅ 11. Real-World / Scenario-Based Questions (Important 🔥)
+How would you design a URL shortener in Node.js?
+How do you handle high traffic APIs?
+API timeout handling strategy?
+How to debug production issues?
+How do you monitor Node.js apps?
+Logging best practices
+How to handle distributed transactions?
+How to design rate limiter for APIs
+How do you ensure zero downtime deployment?
+What will you do if server CPU goes 100%?

@@ -1,0 +1,278 @@
+What are worker threads?
+
+**Worker Threads** allow you to run JavaScript code in parallel on separate threads, preventing CPU-intensive tasks 
+from blocking the main Node.js event loop.
+
+By default, Node.js uses:
+
+* One main thread
+* One event loop
+
+This works great for I/O operations (database calls, API requests, file reads), but CPU-heavy tasks can block the event loop.
+
+---
+
+# The Problem
+
+Suppose you calculate a huge Fibonacci number:
+
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(45));
+
+While this runs:
+
+Main Thread
+    |
+Heavy Calculation
+    |
+Event Loop Blocked ❌
+
+No other requests can be processed efficiently.
+
+---
+
+# Solution: Worker Threads
+
+Move CPU-intensive work to another thread.
+
+Main Thread
+    |
+    |---- Worker 1
+    |
+    |---- Worker 2
+    |
+    |---- Worker 3
+
+The main thread remains responsive while workers perform the heavy computation.
+
+---
+
+# Creating a Worker
+
+### main.js
+
+const { Worker } = require('worker_threads');
+
+const worker = new Worker('./worker.js');
+
+worker.on('message', (result) => {
+    console.log('Result:', result);
+});
+
+worker.postMessage(45);
+
+### worker.js
+
+const { parentPort } = require('worker_threads');
+
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+parentPort.on('message', (num) => {
+    const result = fibonacci(num);
+    parentPort.postMessage(result);
+});
+
+---
+
+# Communication Between Threads
+
+Workers communicate through messages.
+
+Main Thread
+      |
+postMessage()
+      |
+Worker Thread
+      |
+postMessage()
+      |
+Main Thread
+
+Example:
+
+worker.postMessage("Hello Worker");
+
+Worker receives:
+
+parentPort.on('message', (msg) => {
+    console.log(msg);
+});
+
+---
+
+# Useful Events
+
+### message
+
+worker.on('message', data => {
+    console.log(data);
+});
+
+---
+
+### error
+
+worker.on('error', err => {
+    console.error(err);
+});
+
+---
+
+### exit
+
+worker.on('exit', code => {
+    console.log(`Worker exited: ${code}`);
+});
+
+---
+
+# Worker Threads vs Cluster
+
+This is a very common interview question.
+
+| Worker Threads                  | Cluster                    |
+| ------------------------------- | -------------------------- |
+| Multiple threads in one process | Multiple processes         |
+| Shared memory possible          | Separate memory            |
+| For CPU-intensive work          | For handling more requests |
+| Uses `worker_threads` module    | Uses `cluster` module      |
+
+### Worker Threads
+
+Process
+ |
+ |-- Thread 1
+ |-- Thread 2
+ |-- Thread 3
+
+### Cluster
+
+Server
+ |
+ |-- Process 1
+ |-- Process 2
+ |-- Process 3
+
+---
+
+# Worker Threads vs Child Processes
+
+| Worker Thread            | Child Process                          |
+| ------------------------ | -------------------------------------- |
+| Lightweight              | Heavyweight                            |
+| Shares process resources | Completely separate process            |
+| Faster communication     | Slower IPC                             |
+| Best for computations    | Best for running separate applications |
+
+---
+
+# Shared Memory
+
+Workers can share memory using:
+
+const sharedBuffer = new SharedArrayBuffer(4);
+
+Main Thread
+      |
+ Shared Memory
+      |
+Worker Thread
+
+This avoids copying large amounts of data.
+
+---
+
+# When to Use Worker Threads
+
+✅ Image processing
+
+✅ Video encoding
+
+✅ Data compression
+
+✅ Cryptography
+
+✅ Machine learning calculations
+
+✅ Large mathematical computations
+
+✅ PDF generation
+
+---
+
+# When NOT to Use Worker Threads
+
+❌ Database queries
+
+❌ HTTP requests
+
+❌ Reading files
+
+❌ API calls
+
+These are already asynchronous and handled efficiently by Node.js.
+
+Example:
+
+const users = await User.find();
+
+No worker thread needed.
+
+---
+
+# Real-World Example
+
+Suppose an API generates large reports.
+
+Without workers:
+
+Request
+   |
+Generate Report (30 sec)
+   |
+Event Loop Blocked ❌
+
+With workers:
+
+Request
+   |
+Create Worker
+   |
+Worker Generates Report
+   |
+Main Thread Handles More Requests ✅
+
+---
+
+# Benefits
+
+* Parallel execution
+* Better CPU utilization
+* Keeps event loop responsive
+* Improves application performance
+* Suitable for CPU-heavy tasks
+
+---
+
+# Drawbacks
+
+* Additional memory usage
+* Communication overhead
+* More complex code
+* Not useful for I/O-bound operations
+
+---
+
+# Interview Answer (Short)
+
+> Worker Threads are a Node.js feature that enables parallel execution of JavaScript code in separate threads. 
+They are primarily used for CPU-intensive tasks such as image processing, cryptography, and large computations, 
+preventing the main event loop from being blocked. Worker threads communicate with the main thread using message 
+passing and can optionally share memory through `SharedArrayBuffer`.

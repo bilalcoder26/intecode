@@ -1,0 +1,337 @@
+What is Mongoose?
+### What is Mongoose?
+
+**Mongoose** is an **ODM (Object Document Mapper)** library for **MongoDB** and **Node.js**.
+
+It provides a structured way to interact with MongoDB by allowing you to define schemas, validate data, create models,
+ and perform database operations using JavaScript objects.
+
+Think of it like:
+
+```text
+Node.js Application
+        ↓
+     Mongoose
+        ↓
+     MongoDB
+```
+
+Without Mongoose, you directly use the MongoDB driver. With Mongoose, you get additional features such as schema validation, 
+middleware, virtuals, hooks, and easier querying.
+
+---
+
+## Why Use Mongoose?
+
+### 1. Schema Definition
+
+MongoDB is schema-less, meaning documents in the same collection can have different structures.
+
+Example without Mongoose:
+
+```json
+{
+  "name": "Bilal"
+}
+```
+
+```json
+{
+  "name": "Bilal",
+  "age": 25,
+  "email": "test@gmail.com"
+}
+```
+
+This flexibility can create inconsistent data.
+
+Mongoose allows you to define a schema:
+
+```javascript
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+    name: String,
+    age: Number,
+    email: String
+});
+```
+
+Now documents follow a defined structure.
+
+---
+
+### 2. Data Validation
+
+Mongoose validates data before saving.
+
+```javascript
+const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    age: {
+        type: Number,
+        min: 18
+    }
+});
+```
+
+If:
+
+```javascript
+{
+   age: 15
+}
+```
+
+is saved, Mongoose throws a validation error.
+
+---
+
+### 3. Models
+
+A Model is created from a schema.
+
+```javascript
+const User = mongoose.model("User", userSchema);
+```
+
+The model represents a MongoDB collection.
+
+```text
+Schema → Model → Collection
+```
+
+---
+
+### 4. CRUD Operations
+
+#### Create
+
+```javascript
+const user = new User({
+    name: "Bilal",
+    age: 25,
+    email: "bilal@gmail.com"
+});
+
+await user.save();
+```
+
+---
+
+#### Read
+
+```javascript
+const users = await User.find();
+```
+
+```javascript
+const user = await User.findById(id);
+```
+
+---
+
+#### Update
+
+```javascript
+await User.findByIdAndUpdate(
+    id,
+    { age: 26 },
+    { new: true }
+);
+```
+
+---
+
+#### Delete
+
+```javascript
+await User.findByIdAndDelete(id);
+```
+
+---
+
+## Middleware (Hooks)
+
+Mongoose provides middleware that executes before or after certain operations.
+
+### Pre Hook
+
+```javascript
+userSchema.pre("save", function(next) {
+    console.log("Before saving");
+    next();
+});
+```
+
+### Post Hook
+
+```javascript
+userSchema.post("save", function(doc) {
+    console.log("User saved");
+});
+```
+
+Common interview use case: Hashing passwords before saving.
+
+```javascript
+userSchema.pre("save", async function(next) {
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+});
+```
+
+---
+
+## Instance Methods
+
+Methods available on a document.
+
+```javascript
+userSchema.methods.getGreeting = function() {
+    return `Hello ${this.name}`;
+};
+```
+
+Usage:
+
+```javascript
+const user = await User.findById(id);
+
+console.log(user.getGreeting());
+```
+
+---
+
+## Static Methods
+
+Methods available on the model.
+
+```javascript
+userSchema.statics.findByEmail = function(email) {
+    return this.findOne({ email });
+};
+```
+
+Usage:
+
+```javascript
+const user = await User.findByEmail("test@gmail.com");
+```
+
+---
+
+## Virtual Fields
+
+Virtuals are not stored in MongoDB.
+
+```javascript
+userSchema.virtual("fullInfo").get(function() {
+    return `${this.name} - ${this.email}`;
+});
+```
+
+---
+
+## Population (MongoDB Joins)
+
+MongoDB doesn't support SQL joins directly.
+
+Mongoose provides `populate()`.
+
+### User Schema
+
+```javascript
+const userSchema = new mongoose.Schema({
+    name: String
+});
+```
+
+### Post Schema
+
+```javascript
+const postSchema = new mongoose.Schema({
+    title: String,
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User"
+    }
+});
+```
+
+Query:
+
+```javascript
+const posts = await Post.find().populate("user");
+```
+
+Result:
+
+```json
+{
+   "title": "Mongoose Tutorial",
+   "user": {
+      "_id": "123",
+      "name": "Bilal"
+   }
+}
+```
+
+---
+
+## Connecting to MongoDB
+
+```javascript
+const mongoose = require("mongoose");
+
+mongoose.connect(
+    "mongodb://localhost:27017/userdb"
+);
+
+console.log("Connected");
+```
+
+With async/await:
+
+```javascript
+async function connectDB() {
+    try {
+        await mongoose.connect(
+            process.env.MONGO_URI
+        );
+
+        console.log("MongoDB Connected");
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+connectDB();
+```
+
+---
+
+## Mongoose vs MongoDB Native Driver
+
+| Feature        | MongoDB Driver | Mongoose        |
+| -------------- | -------------- | --------------- |
+| Schema         | ❌              | ✅               |
+| Validation     | ❌              | ✅               |
+| Middleware     | ❌              | ✅               |
+| Population     | ❌              | ✅               |
+| Learning Curve | Easier         | Slightly Higher |
+| Flexibility    | High           | Moderate        |
+
+---
+
+## Interview Answer (2-Minute Version)
+
+> Mongoose is an ODM (Object Document Mapper) library for Node.js and MongoDB. 
+It sits between the application and MongoDB, providing features like schema definition, data validation, 
+middleware, hooks, virtual fields, and population. A Schema defines the structure of documents, 
+and a Model created from the schema is used to perform CRUD operations on MongoDB collections. 
+Mongoose helps maintain data consistency and simplifies database interactions compared to using 
+the native MongoDB driver directly.

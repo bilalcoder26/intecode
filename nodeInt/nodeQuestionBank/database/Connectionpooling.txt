@@ -1,0 +1,398 @@
+Connection pooling
+
+## What is Connection Pooling in Node.js?
+
+**Connection Pooling** is a technique where a database driver maintains a pool (group) of 
+reusable database connections instead of creating a new connection for every request.
+
+```text
+Without Pooling
+
+Request 1 → Open Connection → Query → Close Connection
+Request 2 → Open Connection → Query → Close Connection
+Request 3 → Open Connection → Query → Close Connection
+```
+
+Opening a database connection is expensive because it involves:
+
+* Network communication
+* Authentication
+* Resource allocation
+* TCP handshake
+
+Doing this for every request hurts performance.
+
+---
+
+## With Connection Pooling
+
+```text
+Connection Pool
+
+          ┌─────────────┐
+Request 1 → Connection 1
+Request 2 → Connection 2
+Request 3 → Connection 3
+          └─────────────┘
+
+After query completes:
+Connection returns to pool
+and gets reused.
+```
+
+Instead of creating new connections repeatedly, Node.js reuses existing connections.
+
+---
+
+## Why Do We Need It?
+
+Imagine:
+
+```text
+1000 users
+```
+
+Without pooling:
+
+```text
+1000 database connections
+```
+
+This can:
+
+* Exhaust DB resources
+* Increase latency
+* Cause connection failures
+
+With pooling:
+
+```text
+Pool Size = 20
+
+1000 requests
+↓
+20 reusable connections
+```
+
+Much more efficient.
+
+---
+
+# Example with PostgreSQL (`pg`)
+
+### Without Pooling (Not Recommended)
+
+```javascript
+const { Client } = require("pg");
+
+app.get("/users", async (req, res) => {
+    const client = new Client({
+        connectionString: process.env.DB_URL
+    });
+
+    await client.connect();
+
+    const result = await client.query(
+        "SELECT * FROM users"
+    );
+
+    await client.end();
+
+    res.json(result.rows);
+});
+```
+
+Problem:
+
+```text
+Every request:
+Connect
+Query
+Disconnect
+```
+
+Very slow.
+
+---
+
+### With Pooling (Recommended)
+
+```javascript
+const { Pool } = require("pg");
+
+const pool = new Pool({
+    connectionString: process.env.DB_URL,
+    max: 10
+});
+```
+
+Use it:
+
+```javascript
+app.get("/users", async (req, res) => {
+
+    const result =
+        await pool.query(
+            "SELECT * FROM users"
+        );
+
+    res.json(result.rows);
+});
+```
+
+The pool manages connections automatically.
+
+---
+
+# Example with MySQL
+
+```javascript
+const mysql = require("mysql2/promise");
+
+const pool = mysql.createPool({
+    host: "localhost",
+    user: "root",
+    password: "password",
+    database: "testdb",
+    waitForConnections: true,
+    connectionLimit: 10
+});
+```
+
+Query:
+
+```javascript
+const [rows] =
+    await pool.query(
+        "SELECT * FROM users"
+    );
+```
+
+---
+
+# Example with MongoDB / Mongoose
+
+Many developers don't realize this:
+
+✅ **Mongoose already uses connection pooling internally.**
+
+```javascript
+await mongoose.connect(
+    process.env.MONGO_URI
+);
+```
+
+Behind the scenes:
+
+```text
+Mongoose
+   ↓
+MongoDB Driver
+   ↓
+Connection Pool
+```
+
+Configure pool size:
+
+```javascript
+await mongoose.connect(
+    process.env.MONGO_URI,
+    {
+        maxPoolSize: 20
+    }
+);
+```
+
+---
+
+# How Pooling Works Internally
+
+Suppose:
+
+```text
+Pool Size = 3
+```
+
+```text
+Pool
+ ├─ Conn 1
+ ├─ Conn 2
+ └─ Conn 3
+```
+
+Requests arrive:
+
+```text
+Req1 → Conn1
+Req2 → Conn2
+Req3 → Conn3
+```
+
+Fourth request:
+
+```text
+Req4
+ ↓
+Wait Queue
+```
+
+When a connection becomes free:
+
+```text
+Conn1 released
+ ↓
+Req4 gets Conn1
+```
+
+---
+
+# Important Pool Configuration
+
+### Maximum Connections
+
+```javascript
+max: 10
+```
+
+Maximum number of active connections.
+
+---
+
+### Minimum Connections
+
+Some drivers support:
+
+```javascript
+min: 2
+```
+
+Keep at least 2 connections alive.
+
+---
+
+### Idle Timeout
+
+```javascript
+idleTimeoutMillis: 30000
+```
+
+Close idle connections after 30 seconds.
+
+---
+
+### Connection Timeout
+
+```javascript
+connectionTimeoutMillis: 5000
+```
+
+Maximum wait time for a connection.
+
+---
+
+# Benefits of Connection Pooling
+
+### 1. Better Performance
+
+No repeated connection creation.
+
+```text
+Reuse Existing Connection
+```
+
+---
+
+### 2. Reduced Latency
+
+Requests execute faster.
+
+---
+
+### 3. Lower Database Load
+
+```text
+10 connections
+instead of
+1000 connections
+```
+
+---
+
+### 4. Better Scalability
+
+Supports high traffic efficiently.
+
+---
+
+# Drawbacks
+
+### 1. Too Small Pool
+
+```text
+Pool Size = 2
+Traffic = 500 Requests
+```
+
+Requests wait in queue.
+
+---
+
+### 2. Too Large Pool
+
+```text
+Pool Size = 1000
+```
+
+Database resources get exhausted.
+
+---
+
+### 3. Connection Leaks
+
+If connections are not released:
+
+```javascript
+const client = await pool.connect();
+
+// Forgot:
+client.release();
+```
+
+Pool eventually runs out of available connections.
+
+---
+
+# Interview Questions
+
+### Q: Why not create a DB connection for every request?
+
+Because establishing a connection is expensive and can overwhelm the database under heavy traffic.
+
+---
+
+### Q: What happens when all connections in the pool are busy?
+
+New requests wait in a queue until a connection becomes available, or they fail after a timeout.
+
+---
+
+### Q: Does Mongoose use connection pooling?
+
+Yes. The MongoDB Node.js driver used by Mongoose maintains a connection pool automatically.
+
+---
+
+### Q: What is a connection leak?
+
+A connection acquired from the pool is never returned/released, causing the pool to become exhausted over time.
+
+---
+
+## Interview Answer (1-2 Minutes)
+
+> Connection pooling is a technique where a database driver maintains a pool of reusable database connections. 
+Instead of creating and closing a connection for every request, applications borrow a connection from the pool, 
+execute queries, and return it back for reuse. This improves performance, reduces latency, and lowers the load 
+on the database. In Node.js, libraries such as `pg`, `mysql2`, and the MongoDB driver support connection pooling. 
+Mongoose also uses connection pooling internally. Key pool settings include maximum pool size, idle timeout, and c
+onnection timeout. One common issue is connection leaks, which occur when connections are not released back to the pool.

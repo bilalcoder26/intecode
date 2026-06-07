@@ -1,0 +1,4 @@
+REST API (Representational State Transfer) is an architectural style for building web services. 
+It treats data as resources identified by URLs and uses standard HTTP methods such as GET, POST, PUT, PATCH, and DELETE 
+to perform operations. REST APIs are stateless, follow a uniform interface, and commonly exchange data in JSON format. 
+They are widely used for communication between frontend applications, mobile apps, and backend services.

@@ -1,0 +1,492 @@
+How to secure APIs
+Securing APIs in Node.js is one of the most important aspects of backend development. 
+In interviews, it's usually expected that you know authentication, authorization, input validation, rate limiting,
+ and common attack prevention techniques.
+
+# 1. Authentication (Who are you?)
+
+Authentication verifies the identity of the user.
+
+### JWT (JSON Web Token)
+
+When a user logs in successfully:
+
+```javascript
+const jwt = require("jsonwebtoken");
+
+const token = jwt.sign(
+  { userId: user._id, role: user.role },
+  process.env.JWT_SECRET,
+  { expiresIn: "1h" }
+);
+```
+
+Client sends token:
+
+```http
+Authorization: Bearer <token>
+```
+
+Middleware verification:
+
+```javascript
+const jwt = require("jsonwebtoken");
+
+const authenticate = (req, res, next) => {
+  const token = req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    return res.status(401).json({ message: "Access denied" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({ message: "Invalid token" });
+  }
+};
+```
+
+---
+
+# 2. Authorization (What can you do?)
+
+After authentication, check permissions.
+
+Example:
+
+```javascript
+const authorizeAdmin = (req, res, next) => {
+  if (req.user.role !== "ADMIN") {
+    return res.status(403).json({
+      message: "Forbidden"
+    });
+  }
+
+  next();
+};
+```
+
+Usage:
+
+```javascript
+app.delete(
+  "/users/:id",
+  authenticate,
+  authorizeAdmin,
+  deleteUser
+);
+```
+
+### Status Codes
+
+| Code | Meaning                          |
+| ---- | -------------------------------- |
+| 401  | Not authenticated                |
+| 403  | Authenticated but not authorized |
+
+---
+
+# 3. Input Validation
+
+Never trust client input.
+
+Use libraries like:
+
+* Joi
+* Express Validator
+* Zod
+
+Example using Joi:
+
+```javascript
+const Joi = require("joi");
+
+const schema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(8).required()
+});
+```
+
+Validation:
+
+```javascript
+const { error } = schema.validate(req.body);
+
+if (error) {
+  return res.status(400).json(error.details);
+}
+```
+
+Prevents:
+
+* Invalid requests
+* Injection attacks
+* Application crashes
+
+---
+
+# 4. Password Hashing
+
+Never store plain text passwords.
+
+Use bcrypt:
+
+```javascript
+const bcrypt = require("bcrypt");
+
+const hashedPassword =
+  await bcrypt.hash(password, 10);
+```
+
+Verify:
+
+```javascript
+const isMatch =
+  await bcrypt.compare(password, user.password);
+```
+
+Example:
+
+```
+Password: admin123
+
+Stored:
+$2b$10$sdasdsad213123...
+```
+
+Even database leaks won't expose passwords directly.
+
+---
+
+# 5. HTTPS
+
+Always use HTTPS in production.
+
+Benefits:
+
+* Encrypts data in transit
+* Protects JWT tokens
+* Prevents man-in-the-middle attacks
+
+Without HTTPS:
+
+```
+Client ----> Password
+          (visible)
+```
+
+With HTTPS:
+
+```
+Client ----> Encrypted Data
+```
+
+---
+
+# 6. Rate Limiting
+
+Prevents:
+
+* Brute-force attacks
+* DDoS attacks
+* API abuse
+
+Using Express Rate Limit:
+
+```javascript
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+
+app.use(limiter);
+```
+
+Meaning:
+
+```
+100 requests
+per
+15 minutes
+per IP
+```
+
+---
+
+# 7. Helmet
+
+Helmet adds security-related HTTP headers.
+
+```javascript
+const helmet = require("helmet");
+
+app.use(helmet());
+```
+
+Adds headers like:
+
+```http
+X-Frame-Options
+X-Content-Type-Options
+Content-Security-Policy
+```
+
+Protects against:
+
+* Clickjacking
+* MIME sniffing
+* XSS
+
+---
+
+# 8. CORS Protection
+
+Restrict who can call your API.
+
+```javascript
+const cors = require("cors");
+
+app.use(cors({
+  origin: ["https://myapp.com"],
+  methods: ["GET", "POST"]
+}));
+```
+
+Bad:
+
+```javascript
+app.use(cors());
+```
+
+Allows everyone.
+
+---
+
+# 9. Prevent NoSQL Injection (MongoDB)
+
+Dangerous:
+
+```javascript
+User.findOne(req.body);
+```
+
+Attacker:
+
+```json
+{
+  "email": {
+    "$ne": null
+  }
+}
+```
+
+Safer:
+
+```javascript
+User.findOne({
+  email: req.body.email
+});
+```
+
+Use sanitization middleware:
+
+```javascript
+const mongoSanitize =
+  require("express-mongo-sanitize");
+
+app.use(mongoSanitize());
+```
+
+---
+
+# 10. Prevent SQL Injection
+
+Dangerous:
+
+```javascript
+const query =
+  `SELECT * FROM users WHERE id=${id}`;
+```
+
+Safe:
+
+```javascript
+db.query(
+  "SELECT * FROM users WHERE id = ?",
+  [id]
+);
+```
+
+Use:
+
+* ORM
+* Prepared Statements
+* Parameterized Queries
+
+---
+
+# 11. Protect Sensitive Data
+
+Never expose:
+
+```javascript
+{
+  password,
+  refreshToken,
+  secretKey
+}
+```
+
+Good:
+
+```javascript
+res.json({
+  id: user.id,
+  name: user.name,
+  email: user.email
+});
+```
+
+---
+
+# 12. Store Secrets in Environment Variables
+
+Bad:
+
+```javascript
+const JWT_SECRET =
+  "mySuperSecret123";
+```
+
+Good:
+
+```javascript
+process.env.JWT_SECRET
+```
+
+`.env`
+
+```env
+JWT_SECRET=veryStrongSecret
+DB_PASSWORD=password
+```
+
+---
+
+# 13. Logging and Monitoring
+
+Use:
+
+* Morgan
+* Winston
+* Pino
+
+Example:
+
+```javascript
+const morgan = require("morgan");
+
+app.use(morgan("combined"));
+```
+
+Track:
+
+* Failed logins
+* Suspicious requests
+* Server errors
+
+---
+
+# 14. Refresh Token Strategy
+
+Access Token:
+
+```
+15 minutes
+```
+
+Refresh Token:
+
+```
+7 days
+```
+
+Flow:
+
+```text
+Login
+ ↓
+Access Token + Refresh Token
+ ↓
+Access Token Expires
+ ↓
+Refresh Token Generates New Access Token
+```
+
+This reduces the impact of stolen access tokens.
+
+---
+
+# 15. API Key Security (For Public APIs)
+
+```javascript
+app.use((req, res, next) => {
+  const apiKey = req.headers["x-api-key"];
+
+  if (apiKey !== process.env.API_KEY) {
+    return res.status(401).send("Invalid API Key");
+  }
+
+  next();
+});
+```
+
+Used for:
+
+* Internal services
+* Partner integrations
+* Third-party consumers
+
+---
+
+# Common API Security Middleware Setup
+
+```javascript
+const express = require("express");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const cors = require("cors");
+const mongoSanitize = require("express-mongo-sanitize");
+
+const app = express();
+
+app.use(express.json());
+
+app.use(helmet());
+
+app.use(cors({
+  origin: ["https://myapp.com"]
+}));
+
+app.use(mongoSanitize());
+
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+}));
+```
+
+# Interview Answer (2-Minute Version)
+
+"To secure APIs in Node.js, I implement authentication using JWT, authorization through role-based access control, 
+validate all incoming requests using Joi or Zod, hash passwords with bcrypt, enforce HTTPS, use Helmet for security headers, 
+configure CORS properly, apply rate limiting to prevent abuse, sanitize inputs to prevent SQL/NoSQL injection, 
+store secrets in environment variables, and use logging and monitoring to detect suspicious activity. 
+For production systems, I also use refresh tokens and API keys where appropriate."
+
+These are the security measures most commonly expected in Node.js, Express.js, and microservices interviews.

@@ -1,0 +1,230 @@
+In **Express.js**, file uploads are commonly handled using **Multer**, 
+which is middleware for handling `multipart/form-data`.
+
+---
+
+# 1. Install Multer
+
+npm install multer
+
+---
+
+# 2. Basic File Upload Setup
+
+const express = require('express');
+const multer = require('multer');
+
+const app = express();
+
+### Configure Storage
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage });
+
+---
+
+# 3. Upload a Single File
+
+app.post('/upload', upload.single('file'), (req, res) => {
+    res.json({
+        message: "File uploaded successfully",
+        file: req.file
+    });
+});
+
+### HTML Form
+
+<form action="/upload" method="POST" enctype="multipart/form-data">
+    <input type="file" name="file">
+    <button type="submit">Upload</button>
+</form>
+
+---
+
+# 4. Upload Multiple Files
+
+app.post('/upload-multiple',
+    upload.array('files', 5),
+    (req, res) => {
+        res.json(req.files);
+    }
+);
+
+* `'files'` = field name
+* `5` = maximum files allowed
+
+---
+
+# 5. Upload Multiple Different Fields
+
+app.post(
+    '/upload-documents',
+    upload.fields([
+        { name: 'profilePic', maxCount: 1 },
+        { name: 'resume', maxCount: 1 }
+    ]),
+    (req, res) => {
+        res.send("Uploaded");
+    }
+);
+
+Access:
+
+req.files.profilePic
+req.files.resume
+
+---
+
+# 6. File Type Validation
+
+Allow only images:
+
+const fileFilter = (req, file, cb) => {
+
+    if (
+        file.mimetype === 'image/jpeg' ||
+        file.mimetype === 'image/png'
+    ) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only images allowed'), false);
+    }
+};
+
+const upload = multer({
+    storage,
+    fileFilter
+});
+
+---
+
+# 7. File Size Validation
+
+Limit uploads to 5 MB:
+
+const upload = multer({
+    storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    }
+});
+
+---
+
+# 8. Error Handling
+
+app.post('/upload',
+    upload.single('file'),
+    (req, res) => {
+        res.send('Success');
+    }
+);
+
+app.use((err, req, res, next) => {
+    res.status(400).json({
+        message: err.message
+    });
+});
+
+---
+
+# 9. Store File in Memory
+
+Useful when uploading directly to cloud storage.
+
+const upload = multer({
+    storage: multer.memoryStorage()
+});
+```
+
+Access buffer:
+
+req.file.buffer
+```
+
+---
+
+# 10. Upload Directly to Cloud (Production)
+
+Instead of storing files locally:
+
+Client
+  ↓
+Express + Multer
+  ↓
+AWS S3 / Cloudinary / Google Cloud Storage
+
+Common choices:
+
+* Amazon Web Services S3
+* Cloudinary
+* Google Cloud Storage
+
+Typical flow:
+
+app.post('/upload',
+    upload.single('image'),
+    async (req, res) => {
+
+        const result = await uploadToCloud(req.file);
+
+        res.json({
+            url: result.url
+        });
+    }
+);
+
+---
+
+# Production Best Practices
+
+### ✅ Validate
+
+* File type
+* File size
+* Required fields
+
+### ✅ Rename Files
+
+Avoid collisions:
+
+Date.now() + '-' + file.originalname
+
+### ✅ Virus Scan (if needed)
+
+For public uploads:
+
+* Documents
+* PDFs
+* Attachments
+
+### ✅ Store Outside Application Folder
+
+Prefer cloud storage over local disk.
+
+### ✅ Never Trust Extension Alone
+
+Bad:
+
+```text
+virus.exe.jpg
+
+Validate MIME type as well.
+
+---
+
+# Interview Answer
+
+> In Express, file uploads are typically handled using Multer middleware. 
+Multer parses `multipart/form-data` requests and makes uploaded files available through 
+`req.file` or `req.files`. It supports single-file, multiple-file, and multi-field uploads, 
+along with file size limits, MIME-type validation, custom storage strategies, and integration with 
+cloud storage services such as S3 or Cloudinary.

@@ -1,0 +1,211 @@
+Schema vs Model
+
+This is one of the most common MongoDB/Mongoose interview questions.
+
+## Schema vs Model in Mongoose
+
+| Schema                                | Model                                  |
+| ------------------------------------- | -------------------------------------- |
+| Defines the structure of documents    | Used to interact with MongoDB          |
+| Blueprint of data                     | Actual object used for CRUD operations |
+| Specifies fields, types, validations  | Represents a MongoDB collection        |
+| Does not communicate with DB directly | Communicates with DB                   |
+| Created using `mongoose.Schema()`     | Created using `mongoose.model()`       |
+
+---
+
+## Real World Analogy
+
+Imagine you're constructing a house.
+
+### Schema = Blueprint
+
+The blueprint defines:
+
+* Number of rooms
+* Kitchen location
+* Bathroom location
+* Dimensions
+
+But you cannot live in the blueprint.
+
+```text
+Blueprint = Schema
+```
+
+---
+
+### Model = Actual House
+
+The house is built using the blueprint.
+
+Now you can:
+
+* Enter the house
+* Modify it
+* Sell it
+* Use it
+
+```text
+House = Model
+```
+
+---
+
+## Step 1: Create Schema
+
+```javascript
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+    name: String,
+    age: Number,
+    email: String
+});
+```
+
+Here:
+
+```javascript
+userSchema
+```
+
+is only a structure definition.
+
+It is **not connected to MongoDB collection yet**.
+
+---
+
+## Step 2: Create Model
+
+```javascript
+const User = mongoose.model(
+    "User",
+    userSchema
+);
+```
+
+Now:
+
+```javascript
+User
+```
+
+is a Model.
+
+Mongoose creates (or uses) a collection named:
+
+```text
+users
+```
+
+(Mongoose pluralizes the model name by default.)
+
+---
+
+## CRUD Happens Through Model
+
+### Create
+
+```javascript
+const user = new User({
+    name: "Bilal",
+    age: 25,
+    email: "bilal@gmail.com"
+});
+
+await user.save();
+```
+
+---
+
+### Read
+
+```javascript
+const users = await User.find();
+```
+
+---
+
+### Update
+
+```javascript
+await User.findByIdAndUpdate(
+    id,
+    { age: 30 }
+);
+```
+
+---
+
+### Delete
+
+```javascript
+await User.findByIdAndDelete(id);
+```
+
+Notice:
+
+❌ Schema cannot do these operations.
+
+✅ Model performs all database operations.
+
+---
+
+## Relationship
+
+```text
+Schema
+   ↓
+Model
+   ↓
+Collection
+   ↓
+Documents
+```
+
+Example:
+
+```javascript
+const userSchema = new mongoose.Schema({
+    name: String,
+    email: String
+});
+
+const User = mongoose.model(
+    "User",
+    userSchema
+);
+```
+
+MongoDB:
+
+```text
+Database
+   ↓
+users collection
+   ↓
+{
+  "_id": "...",
+  "name": "Bilal",
+  "email": "bilal@gmail.com"
+}
+```
+
+---
+
+## Interview-Friendly Definition
+
+### What is a Schema?
+
+> A Schema is a blueprint that defines the structure, data types, validation rules, default values, 
+and constraints for documents in a MongoDB collection.
+
+### What is a Model?
+
+> A Model is a constructor created from a Schema. It provides an interface to perform CRUD operations 
+on a MongoDB collection and represents that collection in the application.
+
+### One-Line Difference
+
+> **Schema defines how data should look, while Model is used to interact with the database using that schema.** 🚀

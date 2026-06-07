@@ -1,0 +1,403 @@
+How do you monitor Node.js apps?
+Monitoring a Node.js application means tracking its **health, performance, errors, and resource usage** 
+so that problems can be detected before users are affected.
+
+---
+
+# What Should Be Monitored?
+
+There are four main areas:
+
+## 1. Application Metrics
+
+Track:
+
+* Request rate (RPS)
+* Response time
+* Error rate
+* Active users
+* API latency
+
+Example:
+
+```text
+Requests/sec: 2000
+Average Response Time: 150ms
+Error Rate: 0.5%
+```
+
+---
+
+## 2. System Metrics
+
+Track:
+
+* CPU usage
+* Memory usage
+* Disk usage
+* Network traffic
+
+Example:
+
+```text
+CPU: 90%
+Memory: 85%
+```
+
+High CPU may indicate:
+
+* Infinite loops
+* Heavy computations
+* Traffic spikes
+
+---
+
+## 3. Node.js Runtime Metrics
+
+Track:
+
+* Event loop lag
+* Heap memory
+* Garbage Collection activity
+* Active handles
+* Open connections
+
+Example:
+
+```javascript
+const start = process.hrtime();
+```
+
+High event loop lag indicates blocking operations.
+
+---
+
+## 4. Business Metrics
+
+Monitor things that matter to the business:
+
+* Orders placed
+* Payments failed
+* Login success rate
+* Revenue
+
+Example:
+
+```text
+Checkout Success Rate: 98%
+Payment Failures: 2%
+```
+
+Sometimes the app is healthy but the business flow is broken.
+
+---
+
+# Logging
+
+Logs are the first line of debugging.
+
+Instead of:
+
+```javascript
+console.log("Error");
+```
+
+Use structured logging:
+
+```javascript
+logger.error({
+  requestId: "abc123",
+  userId: "u100",
+  error: err.message
+});
+```
+
+Popular Node.js logging libraries:
+
+* [Winston](https://github.com/winstonjs/winston?utm_source=chatgpt.com)
+* [Pino](https://getpino.io?utm_source=chatgpt.com)
+
+---
+
+# Metrics Collection with Prometheus
+
+A common production setup is:
+
+```text
+Node.js App
+      |
+Prometheus
+      |
+Grafana
+```
+
+### Install Metrics Library
+
+```bash
+npm install prom-client
+```
+
+Example:
+
+```javascript
+const client = require('prom-client');
+
+const collectDefaultMetrics =
+  client.collectDefaultMetrics;
+
+collectDefaultMetrics();
+```
+
+Expose metrics:
+
+```javascript
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type',
+    client.register.contentType);
+
+  res.end(await client.register.metrics());
+});
+```
+
+Prometheus scrapes this endpoint periodically.
+
+---
+
+# Visualization with Grafana
+
+Use:
+
+* [Grafana](https://grafana.com?utm_source=chatgpt.com)
+
+Dashboards typically show:
+
+```text
+CPU Usage
+Memory Usage
+Request Rate
+Error Rate
+P95 Latency
+P99 Latency
+```
+
+Example:
+
+```text
+Latency:
+P50 = 50ms
+P95 = 200ms
+P99 = 2s
+```
+
+P99 often reveals production bottlenecks.
+
+---
+
+# Error Tracking
+
+For uncaught exceptions and crashes:
+
+Use:
+
+* [Sentry](https://sentry.io?utm_source=chatgpt.com)
+
+Example:
+
+```javascript
+Sentry.captureException(error);
+```
+
+Benefits:
+
+* Stack traces
+* Error grouping
+* Alerts
+
+---
+
+# Distributed Tracing
+
+In microservices:
+
+```text
+Gateway
+   |
+User Service
+   |
+Order Service
+   |
+Payment Service
+```
+
+A request may traverse many services.
+
+Use:
+
+* [OpenTelemetry](https://opentelemetry.io?utm_source=chatgpt.com)
+* [Jaeger](https://www.jaegertracing.io?utm_source=chatgpt.com)
+
+Tracing shows:
+
+```text
+Gateway      50ms
+User Service 30ms
+Payment API  4s
+```
+
+You immediately know where the delay is.
+
+---
+
+# Health Checks
+
+Expose health endpoints:
+
+```javascript
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'UP'
+  });
+});
+```
+
+More advanced:
+
+```javascript
+{
+  database: "UP",
+  redis: "UP",
+  kafka: "UP"
+}
+```
+
+Load balancers and Kubernetes use these checks.
+
+---
+
+# Alerting
+
+Monitoring is useless without alerts.
+
+Examples:
+
+```text
+CPU > 80%
+Memory > 90%
+Error Rate > 5%
+Latency > 2 seconds
+```
+
+Alerts can be sent through:
+
+* Email
+* Slack
+* PagerDuty
+
+Using:
+
+* [Grafana Alerting](https://grafana.com/products/cloud/alerting/?utm_source=chatgpt.com)
+* [PagerDuty](https://www.pagerduty.com?utm_source=chatgpt.com)
+
+---
+
+# Monitor Event Loop Lag
+
+Node.js is single-threaded.
+
+Blocking code can freeze the application.
+
+Example:
+
+```javascript
+while(true){}
+```
+
+Monitor event loop delay:
+
+```javascript
+const { monitorEventLoopDelay } =
+require('perf_hooks');
+
+const histogram =
+monitorEventLoopDelay();
+
+histogram.enable();
+```
+
+High lag indicates:
+
+* CPU-heavy work
+* Synchronous operations
+
+---
+
+# Memory Monitoring
+
+Track:
+
+```javascript
+process.memoryUsage()
+```
+
+Metrics:
+
+```text
+Heap Used
+Heap Total
+RSS
+External Memory
+```
+
+If memory continuously increases:
+
+```text
+Possible Memory Leak
+```
+
+Take heap dumps and analyze.
+
+---
+
+# Production Monitoring Stack
+
+A common production setup:
+
+```text
+Node.js App
+    |
+Prometheus
+    |
+Grafana
+    |
+AlertManager
+```
+
+For errors:
+
+```text
+Node.js
+   |
+Sentry
+```
+
+For tracing:
+
+```text
+Node.js
+   |
+OpenTelemetry
+   |
+Jaeger
+```
+
+---
+
+# Interview Answer (1–2 Minutes)
+
+> I monitor Node.js applications using metrics, logs, tracing, and alerting. 
+For metrics, I track request rate, latency, error rate, CPU, memory, and event loop lag using Prometheus and Grafana. 
+For logging, I use structured logs with tools like Pino or Winston and include correlation IDs for tracing requests. 
+For error monitoring, I use Sentry to capture exceptions and stack traces. In microservices architectures, 
+I use OpenTelemetry and Jaeger for distributed tracing to identify bottlenecks across services. 
+I also expose health-check endpoints for Kubernetes and load balancers and configure alerts for high latency, 
+error rates, CPU usage, and memory consumption so that issues can be detected and resolved proactively.

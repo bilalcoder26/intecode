@@ -1,0 +1,275 @@
+## What is HATEOAS?
+
+**HATEOAS** stands for:
+
+> **H**ypermedia **A**s **T**he **E**ngine **O**f **A**pplication **S**tate
+
+It is one of the constraints of the REST architectural style.
+
+The idea is:
+
+> The server should provide links in the response that tell the client what actions can be performed next.
+
+Instead of the client hardcoding all API URLs, the API response guides the client through available actions.
+
+---
+
+## Without HATEOAS
+
+Client requests:
+
+```http
+GET /users/1
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "name": "Bilal"
+}
+```
+
+Problem:
+
+The client doesn't know:
+
+* How to update the user
+* How to delete the user
+* How to get user orders
+
+These URLs must be hardcoded in the frontend.
+
+---
+
+## With HATEOAS
+
+Request:
+
+```http
+GET /users/1
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "name": "Bilal",
+  "links": [
+    {
+      "rel": "self",
+      "href": "/users/1",
+      "method": "GET"
+    },
+    {
+      "rel": "update",
+      "href": "/users/1",
+      "method": "PUT"
+    },
+    {
+      "rel": "delete",
+      "href": "/users/1",
+      "method": "DELETE"
+    },
+    {
+      "rel": "orders",
+      "href": "/users/1/orders",
+      "method": "GET"
+    }
+  ]
+}
+```
+
+Now the client can discover available actions dynamically.
+
+---
+
+## Real-World Analogy
+
+Think of a website.
+
+When you open a page:
+
+```text
+Home
+ ├── Products
+ ├── Orders
+ └── Profile
+```
+
+You don't need to know every URL beforehand because links guide you.
+
+HATEOAS applies the same concept to APIs.
+
+---
+
+## Example: Order API
+
+### Get Order
+
+```http
+GET /orders/101
+```
+
+Response:
+
+```json
+{
+  "id": 101,
+  "status": "PENDING",
+  "amount": 500,
+  "links": [
+    {
+      "rel": "cancel",
+      "href": "/orders/101/cancel",
+      "method": "POST"
+    },
+    {
+      "rel": "payment",
+      "href": "/orders/101/payment",
+      "method": "POST"
+    }
+  ]
+}
+```
+
+If order status changes to `SHIPPED`:
+
+```json
+{
+  "id": 101,
+  "status": "SHIPPED",
+  "links": [
+    {
+      "rel": "track",
+      "href": "/orders/101/tracking",
+      "method": "GET"
+    }
+  ]
+}
+```
+
+The available actions change based on the resource state.
+
+---
+
+## Implementing HATEOAS in Express
+
+Using **Express.js**:
+
+```javascript
+app.get('/users/:id', (req, res) => {
+
+    const userId = req.params.id;
+
+    res.json({
+        id: userId,
+        name: "Bilal",
+        links: [
+            {
+                rel: "self",
+                href: `/users/${userId}`,
+                method: "GET"
+            },
+            {
+                rel: "update",
+                href: `/users/${userId}`,
+                method: "PUT"
+            }
+        ]
+    });
+});
+```
+
+---
+
+## Advantages
+
+### 1. Better Discoverability
+
+Clients can discover actions from responses.
+
+---
+
+### 2. Reduced Client Coupling
+
+Frontend doesn't need to hardcode every endpoint.
+
+---
+
+### 3. Easier API Evolution
+
+URLs can change while relation names remain the same.
+
+Example:
+
+```text
+/users/1
+```
+
+can become
+
+```text
+/api/v2/users/1
+```
+
+without breaking smart clients that follow links.
+
+---
+
+### 4. Self-Documenting APIs
+
+Responses describe what can be done next.
+
+---
+
+## Disadvantages
+
+### Additional Response Size
+
+Every response contains extra metadata.
+
+---
+
+### More Complex Implementation
+
+Generating links dynamically adds complexity.
+
+---
+
+### Limited Adoption
+
+Most modern REST APIs don't fully implement HATEOAS.
+
+Examples:
+
+* GitHub API uses hypermedia links in many responses.
+* Many public APIs expose links selectively.
+* Most internal microservice APIs skip full HATEOAS.
+
+---
+
+## Is HATEOAS Mandatory for REST?
+
+According to the original REST constraints proposed by Roy Fielding, **yes**.
+
+In practice:
+
+```text
+REST Theory  -> HATEOAS required
+REST Industry -> Often ignored
+```
+
+Many APIs are called "REST APIs" even though they don't implement HATEOAS.
+
+---
+
+## Interview Answer
+
+> HATEOAS (Hypermedia As The Engine Of Application State) is a REST constraint where API responses
+ include links describing the next available actions. Instead of clients hardcoding endpoints, they discover 
+ operations through hypermedia links returned by the server. This improves discoverability, reduces client-server 
+ coupling, and makes APIs more self-descriptive. However, many modern REST APIs do not fully implement HATEOAS due 
+ to added complexity and response overhead.

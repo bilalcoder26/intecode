@@ -1,0 +1,377 @@
+How do you handle high traffic APIs?
+Handling **high-traffic APIs** is about ensuring the API remains **fast, scalable, reliable, and fault-tolerant** 
+even when receiving thousands or millions of requests.
+
+---
+
+# 1. Load Balancing
+
+Instead of a single Node.js server:
+
+                Load Balancer
+                      |
+          -------------------------
+          |           |           |
+       Node 1      Node 2      Node 3
+
+The load balancer distributes requests across multiple servers.
+
+Common options:
+
+* [NGINX](https://nginx.org?utm_source=chatgpt.com)
+* [HAProxy](https://www.haproxy.org?utm_source=chatgpt.com)
+* Cloud load balancers (AWS ALB, GCP Load Balancer)
+
+### Benefits
+
+* Horizontal scaling
+* High availability
+* Fault tolerance
+
+---
+
+# 2. Caching
+
+Database queries are usually the bottleneck.
+
+Instead of:
+
+Request
+   |
+Database
+
+Use:
+
+Request
+   |
+ Redis
+   |
+ Cache Hit -> Response
+
+ Cache Miss
+   |
+ Database
+   |
+ Update Cache
+
+### Example
+
+const cached = await redis.get(`user:${id}`);
+
+if (cached) {
+    return JSON.parse(cached);
+}
+
+const user = await User.findById(id);
+
+await redis.set(
+    `user:${id}`,
+    JSON.stringify(user),
+    "EX",
+    300
+);
+
+### Benefits
+
+* Reduces DB load
+* Faster response times
+
+---
+
+# 3. Database Optimization
+
+### Proper Indexing
+
+Bad:
+
+SELECT * FROM users
+WHERE email='abc@gmail.com';
+
+Without index:
+
+O(n)
+
+With index:
+
+O(log n)
+
+Example:
+
+CREATE INDEX idx_email
+ON users(email);
+
+---
+
+### Connection Pooling
+
+Creating a database connection for every request is expensive.
+
+Use connection pools:
+
+const pool = new Pool({
+  max: 20
+});
+
+Benefits:
+
+* Reuses connections
+* Reduces latency
+
+---
+
+# 4. Rate Limiting
+
+Prevent abuse and protect backend services.
+
+Example:
+
+const rateLimit = require("express-rate-limit");
+
+app.use(rateLimit({
+  windowMs: 60000,
+  max: 100
+}));
+
+Meaning:
+
+100 requests/minute/IP
+
+Benefits:
+
+* Prevents DDoS-like abuse
+* Protects resources
+
+---
+
+# 5. Asynchronous Processing
+
+Don't perform heavy tasks during the request.
+
+Bad:
+
+Request
+  |
+Generate Report
+Send Email
+Save Analytics
+  |
+Response
+
+User waits for everything.
+
+---
+
+Better:
+
+Request
+  |
+Queue Message
+  |
+Response
+
+Worker
+  |
+Process Task
+
+Tools:
+
+* [RabbitMQ](https://www.rabbitmq.com?utm_source=chatgpt.com)
+* [Apache Kafka](https://kafka.apache.org?utm_source=chatgpt.com)
+
+Example use cases:
+
+* Emails
+* Notifications
+* Analytics
+* PDF generation
+
+---
+
+# 6. Horizontal Scaling
+
+Node.js runs on a single thread.
+
+Run multiple instances:
+
+Server
+ |
+Node 1
+Node 2
+Node 3
+Node 4
+
+Using Cluster mode:
+
+const cluster = require("cluster");
+
+Or production tools:
+
+* [PM2](https://pm2.keymetrics.io?utm_source=chatgpt.com)
+* Docker
+* Kubernetes
+
+---
+
+# 7. Use CDN
+
+For static content:
+
+Images
+CSS
+JS
+Videos
+
+Use a CDN:
+
+User
+ |
+Nearest CDN Edge
+ |
+Content
+
+Examples:
+
+* [Cloudflare](https://www.cloudflare.com?utm_source=chatgpt.com)
+* [Amazon CloudFront](https://aws.amazon.com/cloudfront/?utm_source=chatgpt.com)
+
+Benefits:
+
+* Lower latency
+* Reduced server load
+
+---
+
+# 8. Pagination
+
+Never return huge datasets.
+
+Bad:
+
+GET /users
+
+returns:
+
+1,000,000 records
+
+---
+
+Good:
+
+GET /users?page=1&limit=20
+
+or cursor-based pagination:
+
+GET /users?cursor=abc123
+
+Benefits:
+
+* Faster responses
+* Lower memory usage
+
+---
+
+# 9. Circuit Breaker Pattern
+
+If a downstream service is failing:
+
+API
+ |
+Payment Service
+
+Don't keep retrying endlessly.
+
+Use a circuit breaker:
+
+Closed
+  |
+Open (Failure)
+  |
+Half Open
+
+Benefits:
+
+* Prevents cascading failures
+* Improves resilience
+
+Common Node.js library:
+
+* [Opossum](https://github.com/nodeshift/opossum?utm_source=chatgpt.com)
+
+---
+
+# 10. Worker Threads for CPU-Intensive Tasks
+
+Node.js event loop can be blocked by heavy computations.
+
+Bad:
+
+calculateHugeReport();
+
+Blocks all requests.
+
+Use worker threads:
+
+const Worker = require('worker_threads');
+
+Benefits:
+
+* Keeps event loop responsive
+* Better throughput
+
+---
+
+# 11. Monitoring & Observability
+
+Track:
+
+* Response time
+* Error rate
+* CPU usage
+* Memory usage
+* Throughput
+
+Tools:
+
+* [Prometheus](https://prometheus.io?utm_source=chatgpt.com)
+* [Grafana](https://grafana.com?utm_source=chatgpt.com)
+* [Datadog](https://www.datadoghq.com?utm_source=chatgpt.com)
+
+Metrics help identify bottlenecks before outages occur.
+
+---
+
+# 12. Database Read Replicas
+
+If reads are much higher than writes:
+
+            Primary DB
+                 |
+       ---------------------
+       |         |         |
+   Replica1  Replica2  Replica3
+
+Write:
+
+Primary
+
+Read:
+
+Replicas
+
+Benefits:
+
+* Increased read capacity
+* Reduced load on primary database
+
+---
+
+# Interview Answer (2-Minute Version)
+
+> To handle high-traffic APIs, I would use a load balancer to distribute requests across multiple Node.js instances. 
+I'd cache frequently accessed data in Redis to reduce database load, optimize database queries with indexes and connection 
+pooling, and implement rate limiting to prevent abuse. Heavy operations such as emails, notifications, and analytics would 
+be processed asynchronously using RabbitMQ or Kafka. For scalability, I'd run multiple Node.js instances behind a 
+load balancer and use read replicas or sharding for the database if needed. I'd also use worker threads for CPU-intensive 
+tasks, CDN for static assets, and monitoring tools like Prometheus and Grafana to track system health. 
+This combination ensures low latency, high throughput, and resilience under heavy load.
+

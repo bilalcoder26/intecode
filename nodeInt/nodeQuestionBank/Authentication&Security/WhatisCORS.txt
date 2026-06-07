@@ -1,0 +1,289 @@
+What is CORS?
+# What is CORS?
+
+**CORS (Cross-Origin Resource Sharing)** is a browser security mechanism that controls whether a web page 
+can make requests to a different origin (domain, protocol, or port).
+
+### Example
+
+Frontend:
+
+http://localhost:3000
+
+Backend API:
+
+http://localhost:5000
+
+The browser sees these as **different origins** because the ports are different.
+
+When the frontend tries:
+
+fetch("http://localhost:5000/users");
+
+the browser may block the request unless the backend explicitly allows it through CORS.
+
+---
+
+# What is an Origin?
+
+An origin consists of:
+
+Protocol + Domain + Port
+
+Example:
+
+| URL                                            | Origin                   |
+| ---------------------------------------------- | ------------------------ |
+| [https://google.com](https://google.com)       | https + google.com + 443 |
+| [http://google.com](http://google.com)         | http + google.com + 80   |
+| [http://localhost:3000](http://localhost:3000) | localhost + 3000         |
+| [http://localhost:5000](http://localhost:5000) | localhost + 5000         |
+
+These are all different origins.
+
+---
+
+# Why Does CORS Exist?
+
+Imagine you're logged into your bank:
+
+https://mybank.com
+
+Now you visit a malicious website:
+
+https://hacker.com
+
+Without CORS protection, the malicious site could send requests to your bank using your existing session cookies.
+
+CORS helps prevent unauthorized cross-origin access.
+
+---
+
+# Same-Origin Policy
+
+Browsers enforce the **Same-Origin Policy**:
+
+✅ Allowed:
+
+Frontend: http://localhost:3000
+API:      http://localhost:3000/api
+
+❌ Blocked by default:
+
+Frontend: http://localhost:3000
+API:      http://localhost:5000
+
+unless the server allows it.
+
+---
+
+# What Happens Internally?
+
+Frontend:
+
+fetch("http://localhost:5000/users");
+
+Browser sends:
+
+Origin: http://localhost:3000
+
+Server response:
+
+Access-Control-Allow-Origin: http://localhost:3000
+
+Browser checks:
+
+Origin == Allowed Origin ?
+
+If yes:
+
+Request Allowed
+
+Otherwise:
+
+Blocked by CORS
+
+---
+
+# Common CORS Error
+
+Access to fetch at
+'http://localhost:5000/users'
+from origin
+'http://localhost:3000'
+has been blocked by CORS policy
+
+This means:
+
+* Request reached the server
+* Server didn't allow that origin
+* Browser blocked the response
+
+---
+
+# Enable CORS in Node.js (Express)
+
+Install:
+
+npm install cors
+
+Use middleware:
+
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+
+This allows all origins.
+
+---
+
+# Restrict Specific Origins
+
+Better for production:
+
+app.use(
+  cors({
+    origin: "https://myapp.com"
+  })
+);
+
+Only:
+
+https://myapp.com
+
+can access the API.
+
+---
+
+# Multiple Origins
+
+app.use(
+  cors({
+    origin: [
+      "https://myapp.com",
+      "https://admin.myapp.com"
+    ]
+  })
+);
+
+---
+
+# Allow Specific Methods
+
+app.use(
+  cors({
+    origin: "https://myapp.com",
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  })
+);
+
+---
+
+# Allow Headers
+
+app.use(
+  cors({
+    origin: "https://myapp.com",
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization"
+    ]
+  })
+);
+
+---
+
+# Credentials (Cookies, Sessions)
+
+If using cookies:
+
+Backend:
+
+app.use(
+  cors({
+    origin: "https://myapp.com",
+    credentials: true
+  })
+);
+
+Frontend:
+
+fetch(url, {
+  credentials: "include"
+});
+
+Response header:
+
+Access-Control-Allow-Credentials: true
+
+---
+
+# Preflight Request (OPTIONS)
+
+Before sending certain requests, the browser sends an **OPTIONS** request.
+
+Example:
+
+fetch("/users", {
+  method: "PUT",
+  headers: {
+    Authorization: "Bearer xyz"
+  }
+});
+
+Browser first sends:
+
+OPTIONS /users
+
+Server responds:
+
+Access-Control-Allow-Methods:
+GET,POST,PUT,DELETE
+
+Access-Control-Allow-Headers:
+Authorization
+
+If allowed:
+
+OPTIONS Success
+      ↓
+Actual PUT Request Sent
+
+This is called a **preflight request**.
+
+---
+
+# Important Point
+
+CORS is enforced by the **browser**, not by Node.js.
+
+For example:
+
+curl http://localhost:5000/users
+
+works even if CORS is not configured.
+
+Why?
+
+Because:
+
+curl
+Postman
+Backend Services
+
+do not enforce browser CORS rules.
+
+Only browsers do.
+
+---
+
+# Interview Answer
+
+> CORS (Cross-Origin Resource Sharing) is a browser security mechanism that allows a server to specify 
+which origins are permitted to access its resources. By default, browsers enforce the Same-Origin Policy, 
+which blocks requests between different origins. In Node.js, CORS is typically configured using the `cors` 
+middleware by setting allowed origins, methods, headers, and credentials. It helps protect users from unauthorized 
+cross-origin requests while allowing legitimate frontend applications to communicate with backend APIs.

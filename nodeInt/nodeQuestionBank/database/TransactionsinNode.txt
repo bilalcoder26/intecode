@@ -1,0 +1,398 @@
+// Transactions in Node.js
+## Transactions in Node.js
+
+A **transaction** is a group of database operations that are treated as a **single unit of work**.
+
+Either:
+
+✅ **All operations succeed (COMMIT)**
+
+or
+
+❌ **All operations fail (ROLLBACK)**
+
+There is no partial success.
+
+---
+
+## Why Do We Need Transactions?
+
+Consider a bank transfer:
+
+```text
+Bilal Account:  ₹10,000
+Ahmed Account:  ₹5,000
+```
+
+Transfer:
+
+```text
+₹2,000 from Bilal → Ahmed
+```
+
+Steps:
+
+1. Deduct ₹2,000 from Bilal
+2. Add ₹2,000 to Ahmed
+
+Suppose step 1 succeeds but step 2 fails.
+
+Result:
+
+```text
+Bilal: ₹8,000
+Ahmed: ₹5,000
+```
+
+₹2,000 disappeared!
+
+A transaction ensures:
+
+```text
+Either both operations succeed
+OR
+Neither operation succeeds
+```
+
+---
+
+# ACID Properties
+
+Transactions follow ACID principles.
+
+### A – Atomicity
+
+All or nothing.
+
+```text
+Debit Money
+Credit Money
+```
+
+Both happen or neither happens.
+
+---
+
+### C – Consistency
+
+Database remains in a valid state.
+
+```text
+Before Transfer:
+10000 + 5000 = 15000
+
+After Transfer:
+8000 + 7000 = 15000
+```
+
+Total balance remains consistent.
+
+---
+
+### I – Isolation
+
+Multiple transactions should not interfere with each other.
+
+Example:
+
+```text
+User A transferring money
+User B transferring money
+```
+
+Each transaction behaves as if it is running alone.
+
+---
+
+### D – Durability
+
+Once committed, data survives crashes.
+
+```text
+COMMIT
+↓
+Server Crash
+↓
+Data Still Exists
+```
+
+---
+
+# Transactions in MongoDB (Mongoose)
+
+MongoDB supports multi-document transactions using **sessions**.
+
+---
+
+## Example
+
+### Without Transaction
+
+```javascript
+await Account.updateOne(
+    { _id: senderId },
+    { $inc: { balance: -1000 } }
+);
+
+await Account.updateOne(
+    { _id: receiverId },
+    { $inc: { balance: 1000 } }
+);
+```
+
+Problem:
+
+If second query fails:
+
+```text
+Money deducted
+Money not credited
+```
+
+Data becomes inconsistent.
+
+---
+
+## With Transaction
+
+```javascript
+const session =
+    await mongoose.startSession();
+
+session.startTransaction();
+
+try {
+
+    await Account.updateOne(
+        { _id: senderId },
+        { $inc: { balance: -1000 } },
+        { session }
+    );
+
+    await Account.updateOne(
+        { _id: receiverId },
+        { $inc: { balance: 1000 } },
+        { session }
+    );
+
+    await session.commitTransaction();
+
+} catch (error) {
+
+    await session.abortTransaction();
+
+} finally {
+
+    session.endSession();
+
+}
+```
+
+---
+
+## Flow
+
+```text
+Start Session
+       ↓
+Start Transaction
+       ↓
+Operation 1
+       ↓
+Operation 2
+       ↓
+Success?
+    /     \
+ Yes      No
+  |         |
+Commit    Abort
+```
+
+---
+
+# Transaction Using `withTransaction()`
+
+Cleaner approach.
+
+```javascript
+const session =
+    await mongoose.startSession();
+
+try {
+
+    await session.withTransaction(
+        async () => {
+
+            await User.create(
+                [{
+                    name: "Bilal"
+                }],
+                { session }
+            );
+
+            await Account.create(
+                [{
+                    balance: 1000
+                }],
+                { session }
+            );
+
+        }
+    );
+
+} finally {
+
+    session.endSession();
+
+}
+```
+
+If any operation throws an error:
+
+```text
+Automatic Rollback
+```
+
+---
+
+# SQL Example (PostgreSQL/MySQL)
+
+In Node.js using SQL databases:
+
+```javascript
+const client =
+    await pool.connect();
+
+try {
+
+    await client.query("BEGIN");
+
+    await client.query(
+        "UPDATE accounts SET balance = balance - 1000 WHERE id = 1"
+    );
+
+    await client.query(
+        "UPDATE accounts SET balance = balance + 1000 WHERE id = 2"
+    );
+
+    await client.query("COMMIT");
+
+} catch (error) {
+
+    await client.query("ROLLBACK");
+
+} finally {
+
+    client.release();
+
+}
+```
+
+---
+
+# Real-World Use Cases
+
+### 1. Banking
+
+```text
+Debit Account
+Credit Account
+```
+
+Must succeed together.
+
+---
+
+### 2. E-Commerce Order Placement
+
+```text
+Create Order
+Reduce Inventory
+Create Payment Record
+```
+
+If inventory update fails:
+
+```text
+Rollback Everything
+```
+
+---
+
+### 3. User Registration
+
+```text
+Create User
+Create Profile
+Create Wallet
+```
+
+If wallet creation fails:
+
+```text
+Rollback User and Profile
+```
+
+---
+
+### 4. Booking Systems
+
+```text
+Reserve Seat
+Create Ticket
+Process Payment
+```
+
+All operations must succeed together.
+
+---
+
+# Common Interview Questions
+
+### Q: What happens if a transaction fails?
+
+**Answer:**
+
+The transaction is rolled back, and none of the changes are persisted.
+
+---
+
+### Q: Why are transactions expensive?
+
+Because the database must:
+
+* Maintain locks/versioning
+* Track changes
+* Ensure ACID guarantees
+
+Long-running transactions can reduce throughput.
+
+---
+
+### Q: Can MongoDB support transactions?
+
+Yes. MongoDB supports multi-document ACID transactions using sessions and transactions (available in replica 
+sets and sharded clusters).
+
+---
+
+### Q: Difference Between Commit and Rollback?
+
+| Commit                    | Rollback           |
+| ------------------------- | ------------------ |
+| Saves changes permanently | Undoes all changes |
+| Transaction successful    | Transaction failed |
+| Data persisted            | Data reverted      |
+
+---
+
+## Interview Answer (1-2 Minutes)
+
+> A transaction is a sequence of database operations executed as a single unit of work.
+ It follows the ACID properties: Atomicity, Consistency, Isolation, and Durability. 
+ The main purpose is to ensure data integrity. In Node.js, transactions are implemented 
+ using the database driver or ORM/ODM. For MongoDB with Mongoose, we use sessions and 
+ `startTransaction()` or `withTransaction()`. If all operations succeed, we commit the transaction; 
+ otherwise, we abort or roll back the transaction. Common use cases include money transfers, order processing, 
+ inventory management, and booking systems where multiple database operations must either succeed together or fail together.
+

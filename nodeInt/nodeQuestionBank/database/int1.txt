@@ -1,0 +1,371 @@
+How Node.js connects to databases?
+## How Node.js Connects to Databases?
+
+Node.js itself does **not directly communicate with databases**. It uses **database drivers or ORMs** that implement the database protocol.
+
+### Architecture
+
+```text
+Node.js Application
+        ↓
+Database Driver / ORM
+        ↓
+TCP/IP Network
+        ↓
+Database Server
+```
+
+Example:
+
+```text
+Express App
+    ↓
+Mongoose
+    ↓
+MongoDB
+```
+
+or
+
+```text
+Express App
+    ↓
+pg Driver
+    ↓
+PostgreSQL
+```
+
+---
+
+# 1. MongoDB Connection
+
+Using **Mongoose**
+
+Install:
+
+```bash
+npm install mongoose
+```
+
+Connection:
+
+```javascript
+const mongoose = require('mongoose');
+
+mongoose.connect(
+    'mongodb://localhost:27017/mydb'
+)
+.then(() => {
+    console.log('Connected');
+})
+.catch(err => {
+    console.error(err);
+});
+```
+
+### What happens internally?
+
+```text
+Node.js
+   ↓
+Mongoose
+   ↓
+MongoDB Driver
+   ↓
+TCP Connection
+   ↓
+MongoDB Server
+```
+
+---
+
+# 2. PostgreSQL Connection
+
+Using **node-postgres**
+
+Install:
+
+```bash
+npm install pg
+```
+
+Example:
+
+```javascript
+const { Client } = require('pg');
+
+const client = new Client({
+    host: 'localhost',
+    port: 5432,
+    user: 'postgres',
+    password: 'password',
+    database: 'mydb'
+});
+
+await client.connect();
+
+const result = await client.query(
+    'SELECT * FROM users'
+);
+
+console.log(result.rows);
+```
+
+---
+
+# 3. MySQL Connection
+
+Using **mysql2**
+
+Install:
+
+```bash
+npm install mysql2
+```
+
+Example:
+
+```javascript
+const mysql = require('mysql2/promise');
+
+const connection =
+    await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'password',
+        database: 'mydb'
+    });
+
+const [rows] =
+    await connection.execute(
+        'SELECT * FROM users'
+    );
+
+console.log(rows);
+```
+
+---
+
+# Connection Pooling
+
+Creating a new database connection for every request is expensive.
+
+❌ Bad:
+
+```text
+Request
+  ↓
+Create Connection
+  ↓
+Execute Query
+  ↓
+Close Connection
+```
+
+This happens thousands of times.
+
+---
+
+### Solution: Connection Pool
+
+```text
+Pool
+ ├── Connection 1
+ ├── Connection 2
+ ├── Connection 3
+ └── Connection 4
+```
+
+Requests borrow and return connections.
+
+---
+
+## PostgreSQL Pool Example
+
+```javascript
+const { Pool } = require('pg');
+
+const pool = new Pool({
+    host: 'localhost',
+    port: 5432,
+    user: 'postgres',
+    password: 'password',
+    database: 'mydb',
+    max: 10
+});
+
+const users = await pool.query(
+    'SELECT * FROM users'
+);
+```
+
+---
+
+# Does Node.js Block While Waiting?
+
+No.
+
+Node.js uses asynchronous I/O.
+
+Example:
+
+```javascript
+console.log('Start');
+
+User.find()
+    .then(users => {
+        console.log(users);
+    });
+
+console.log('End');
+```
+
+Output:
+
+```text
+Start
+End
+[users]
+```
+
+While the database query is running:
+
+* Event Loop continues
+* Other requests can be processed
+
+---
+
+# ORM vs Driver
+
+## Driver
+
+Low-level communication with database.
+
+Examples:
+
+* pg
+* mysql2
+* MongoDB Node Driver
+
+Example:
+
+```javascript
+await client.query(
+    'SELECT * FROM users'
+);
+```
+
+You write SQL manually.
+
+---
+
+## ORM / ODM
+
+Higher-level abstraction.
+
+Examples:
+
+* Sequelize
+* TypeORM
+* Prisma
+* Mongoose
+
+Example:
+
+```javascript
+const users =
+    await User.findAll();
+```
+
+No SQL required.
+
+---
+
+# What Happens Internally?
+
+When you execute:
+
+```javascript
+await User.findById(1);
+```
+
+Internally:
+
+```text
+JavaScript Code
+      ↓
+ORM/Driver
+      ↓
+Convert to DB Protocol
+      ↓
+TCP Socket
+      ↓
+Database Server
+      ↓
+Execute Query
+      ↓
+Return Result
+      ↓
+Promise Resolved
+```
+
+---
+
+# Best Practices
+
+### Use Connection Pools
+
+```javascript
+const pool = new Pool();
+```
+
+instead of creating connections per request.
+
+---
+
+### Store Credentials in Environment Variables
+
+```env
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=secret
+```
+
+Use:
+
+```javascript
+process.env.DB_PASSWORD
+```
+
+---
+
+### Close Connections Gracefully
+
+```javascript
+process.on('SIGINT', async () => {
+    await pool.end();
+    process.exit();
+});
+```
+
+---
+
+### Handle Connection Errors
+
+```javascript
+try {
+    await pool.query('SELECT 1');
+} catch (err) {
+    console.error(err);
+}
+```
+
+---
+
+# Interview Answer
+
+> Node.js connects to databases using database drivers or ORMs. 
+The driver establishes a TCP connection with the database server and communicates using the database's protocol. 
+Common examples include Mongoose for MongoDB, pg for PostgreSQL, and mysql2 for MySQL. 
+Since database operations are asynchronous, Node.js does not block the event loop while waiting for query results. 
+In production systems, connection pooling is used to efficiently reuse database connections and improve performance.

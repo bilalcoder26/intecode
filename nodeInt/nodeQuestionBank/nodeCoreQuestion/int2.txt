@@ -1,0 +1,361 @@
+What is the event loop in Node.js?
+## The Event Loop in Node.js
+
+The **event loop** is the core mechanism that enables Node.js to perform non-blocking I/O operations 
+despite being single-threaded. It's what allows Node.js to handle thousands of concurrent connections on a single thread.
+
+---
+
+## The Fundamental Problem It Solves
+
+Without an event loop, a single-threaded server would:
+
+// Request 1: Takes 5 seconds
+// Request 2: Must wait 5 seconds (BAD!)
+// Request 3: Must wait 10 seconds (WORSE!)
+```
+
+With event loop:
+// Request 1: Starts, tells event loop "wake me in 5 seconds"
+// Request 2: Handled immediately
+// Request 3: Handled immediately
+// After 5 seconds: Request 1 resumes
+```
+
+---
+
+## How the Event Loop Works: The Visual Tour
+
+### Simplified View
+```
+          ┌────────────────────────┐
+          │    JavaScript Code     │
+          │   (Call Stack)         │
+          └────────────┬───────────┘
+                       │ async operation
+                       ▼
+          ┌────────────────────────┐
+          │   Node.js APIs (libuv) │
+          │   (C++ side)           │
+          └────────────┬───────────┘
+                       │ operation completes
+                       ▼
+          ┌────────────────────────┐
+          │   Event Queue          │
+          │   (callback waiting)   │
+          └────────────┬───────────┘
+                       │
+          ┌────────────▼───────────┐
+          │    Event Loop          │◄──┐
+          │  (checks queue)        │   │
+          └────────────┬───────────┘   │
+                       │ callback      │ loop
+                       ▼                │
+          ┌────────────────────────┐   │
+          │   Call Stack           │   │
+          │   (execute callback)   │───┘
+          └────────────────────────┘
+```
+
+### The Complete Event Loop Phases
+
+// The event loop cycles through these phases in order:
+
+   ┌───────────────────────────┐
+┌─>│           timers          │  // setTimeout, setInterval
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │     pending callbacks     │  // I/O callbacks deferred to next loop
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │       idle, prepare       │  // Internal use only
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │           poll            │  ★ MOST IMPORTANT: Retrieve new I/O events
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+│  │           check           │  // setImmediate callbacks
+│  └─────────────┬─────────────┘
+│  ┌─────────────┴─────────────┐
+└──┤      close callbacks      │  // socket.on('close')
+   └───────────────────────────┘
+```
+
+---
+
+## Deep Dive into Each Phase
+
+### 1. **Timers Phase**
+Executes callbacks scheduled by `setTimeout()` and `setInterval()`
+
+setTimeout(() => {
+    console.log('Timer callback');
+}, 1000);
+
+// Event loop: 
+// 1. Waits ~1000ms
+// 2. Timer expires, callback added to queue
+// 3. When poll phase ends, executes callback
+```
+
+### 2. **Pending Callbacks Phase**
+Executes I/O callbacks that were deferred from previous cycle
+
+const fs = require('fs');
+
+fs.readFile('file.txt', (err, data) => {
+    console.log('File read complete');  // Runs in this phase
+});
+
+### 3. **Poll Phase (The Heart of Event Loop)**
+- **Retrieves new I/O events** (file reads, network requests)
+- **Executes I/O callbacks** (except timers, close, setImmediate)
+- **Determines how long to block/wait**
+
+const http = require('http');
+
+http.createServer((req, res) => {
+    // This callback runs in poll phase
+    res.end('Hello');
+}).listen(3000);
+
+// Event loop in poll phase:
+// 1. Checks for incoming connections
+// 2. No pending timers? Wait for events
+// 3. Connection arrives, executes callback
+```
+
+### 4. **Check Phase**
+Executes `setImmediate()` callbacks (runs after poll phase completes)
+
+setImmediate(() => {
+    console.log('Immediate callback - runs after poll');
+});
+
+// Use case: Execute callback as soon as current I/O completes
+
+### 5. **Close Callbacks Phase**
+Executes close event handlers (e.g., `socket.on('close', ...)`)
+
+server.on('close', () => {
+    console.log('Server closed');  // Runs in this phase
+});
+
+---
+
+## Visual Example: Tracing Through Event Loop
+
+console.log('1. Start');
+
+// Timer (Timer Phase)
+setTimeout(() => {
+    console.log('4. Timeout (Timer Phase)');
+}, 0);
+
+// Immediate (Check Phase)
+setImmediate(() => {
+    console.log('5. Immediate (Check Phase)');
+});
+
+// File I/O (Poll Phase)
+const fs = require('fs');
+fs.readFile(__filename, () => {
+    console.log('6. File I/O (Poll Phase)');
+    
+    // Nested within I/O
+    setTimeout(() => console.log('8. Nested timeout'), 0);
+    setImmediate(() => console.log('7. Nested immediate'));
+});
+
+// Promise (Microtask - special!)
+Promise.resolve().then(() => {
+    console.log('3. Promise (Microtask)');
+});
+
+// Next Tick (Microtask - highest priority)
+process.nextTick(() => {
+    console.log('2. Next Tick (Highest priority)');
+});
+
+console.log('1b. End of main code');
+
+// Output:
+// 1. Start
+// 1b. End of main code
+// 2. Next Tick (Highest priority)
+// 3. Promise (Microtask)
+// 4. Timeout (Timer Phase)
+// 5. Immediate (Check Phase)
+// 6. File I/O (Poll Phase)
+// 7. Nested immediate
+// 8. Nested timeout
+```
+
+---
+
+## Critical: Microtasks (Next Tick & Promises)
+
+Microtasks have **higher priority** than regular event loop phases:
+
+// Priority order:
+// 1. process.nextTick (highest)
+// 2. Promise callbacks
+// 3. Regular event loop phases
+
+setTimeout(() => console.log('Timeout'), 0);
+Promise.resolve().then(() => console.log('Promise'));
+process.nextTick(() => console.log('NextTick'));
+
+// Output:
+// NextTick
+// Promise
+// Timeout
+
+// DANGER: Recursive nextTick blocks event loop
+function recursiveNextTick() {
+    process.nextTick(recursiveNextTick);  // NEVER DO THIS
+}
+// This prevents any I/O or timers from ever running!
+
+---
+
+## Real-World Example: Web Server Event Loop
+
+const http = require('http');
+const fs = require('fs');
+const crypto = require('crypto');
+
+const server = http.createServer((req, res) => {
+    if (req.url === '/fast') {
+        res.end('Fast');  // Immediate response
+    }
+    
+    if (req.url === '/file') {
+        // Poll phase: Non-blocking file read
+        fs.readFile('large.txt', (err, data) => {
+            res.end(data);  // Callback in poll phase
+        });
+    }
+    
+    if (req.url === '/cpu') {
+        // BAD: This blocks the event loop!
+        // No other requests can be processed during this
+        const hash = crypto.pbkdf2Sync('password', 'salt', 100000, 64, 'sha512');
+        res.end(hash.toString());
+    }
+    
+    if (req.url === '/cpu-good') {
+        // GOOD: Uses async version, doesn't block
+        crypto.pbkdf2('password', 'salt', 100000, 64, 'sha512', (err, hash) => {
+            res.end(hash.toString());
+        });
+    }
+});
+
+server.listen(3000);
+
+// Event loop behavior:
+// - /fast: Immediate callback (poll phase)
+// - /file: Schedules I/O, continues, handles other requests
+// - /cpu: BLOCKS entire event loop (BAD)
+// - /cpu-good: Uses thread pool, non-blocking (GOOD)
+```
+
+---
+
+## Event Loop in Action: 1000 Concurrent Requests
+
+// What happens when 1000 clients request /slow at same time?
+
+app.get('/slow', (req, res) => {
+    // Simulate database query
+    setTimeout(() => {
+        res.json({ data: 'result' });
+    }, 5000);
+});
+
+// Memory usage: ~50MB
+// Event loop handles all 1000 timers
+// No threads blocked (except 4 libuv threads for underlying operations)
+// After 5 seconds, all 1000 responses sent
+```
+
+**Traditional thread-per-request server:**
+- 1000 threads × 1MB = 1GB memory minimum
+- Context switching overhead
+- Many servers would crash
+
+---
+
+## Common Blocking Anti-Patterns (NEVER DO)
+
+```javascript
+// 1. Synchronous I/O
+const data = fs.readFileSync('large.txt');  // BLOCKS
+
+// 2. Long-running loops
+for (let i = 0; i < 1e10; i++) { }  // BLOCKS
+
+// 3. JSON.parse on huge objects
+const huge = JSON.parse(giantString);  // BLOCKS
+
+// 4. Recursive process.nextTick
+function loop() {
+    process.nextTick(loop);  // BLOCKS (never reaches I/O)
+}
+
+// 5. CPU-intensive operations in main thread
+function encrypt(data) {
+    // Heavy crypto without callback
+    return crypto.pbkdf2Sync(data, ...);  // BLOCKS
+}
+```
+
+---
+
+## Monitoring Event Loop Health
+
+```javascript
+// Measure event loop lag
+let lastCheck = Date.now();
+
+setInterval(() => {
+    const now = Date.now();
+    const lag = now - lastCheck - 1000;  // Expected 1000ms interval
+    if (lag > 50) {
+        console.warn(`Event loop lag detected: ${lag}ms`);
+    }
+    lastCheck = now;
+}, 1000);
+
+// Using built-in inspector
+const { performance } = require('perf_hooks');
+setInterval(() => {
+    const start = performance.now();
+    setImmediate(() => {
+        const lag = performance.now() - start;
+        console.log(`Event loop lag: ${lag}ms`);
+    });
+}, 1000);
+```
+
+---
+
+## Key Takeaways
+
+| Concept | Explanation |
+|---------|-------------|
+| **Event Loop** | Single-threaded mechanism that handles async operations |
+| **Non-blocking** | Never wait for I/O - use callbacks, Promises, async/await |
+| **Microtasks** | nextTick and Promises run before next event loop phase |
+| **Phases** | Timers → I/O callbacks → Poll → Check → Close |
+| **Libuv** | The C++ library that implements the event loop |
+| **Thread Pool** | 4 threads for heavy operations (file I/O, crypto, DNS) |
+
+**The Golden Rule:** 
+- **Never block the event loop** with synchronous I/O or CPU-heavy operations
+- **Always use async versions** of Node.js APIs
+- **Offload heavy computation** to worker threads or separate services
+
+**Bottom Line:** The event loop is Node.js's superpower. Understand it, respect it, and 
+Node.js will handle massive concurrency with ease. Block it, and everything stops.

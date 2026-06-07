@@ -1,0 +1,436 @@
+what is JWT
+
+# What is JWT in Node.js?
+
+**JWT (JSON Web Token)** is a compact, secure way to transmit information between a client and a server as a JSON object.
+
+It is commonly used for:
+
+* Authentication
+* Authorization
+* Stateless user sessions
+* API security
+
+---
+
+## Why Do We Need JWT?
+
+### Traditional Session-Based Authentication
+
+Client Login
+      ↓
+Server Creates Session
+      ↓
+Session Stored in Memory/DB
+      ↓
+Session ID Sent to Browser
+
+Every request:
+
+Browser → Session ID
+Server  → Check Session Store
+
+The server must maintain session data.
+
+---
+
+### JWT-Based Authentication
+
+User Login
+      ↓
+Server Generates JWT
+      ↓
+JWT Sent to Client
+      ↓
+Client Stores JWT
+      ↓
+JWT Sent with Every Request
+
+The server does not need to store session data.
+
+This is called **stateless authentication**.
+
+---
+
+# JWT Structure
+
+A JWT has 3 parts:
+
+Header.Payload.Signature
+
+Example:
+
+xxxxx.yyyyy.zzzzz
+
+---
+
+## 1. Header
+
+Contains metadata about the token.
+
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+
+Meaning:
+
+alg = Hashing Algorithm
+typ = JWT
+
+---
+
+## 2. Payload
+
+Contains user information (claims).
+
+{
+  "userId": "123",
+  "email": "bilal@gmail.com",
+  "role": "admin"
+}
+
+Common claims:
+
+* userId
+* email
+* role
+* exp (expiration)
+* iat (issued at)
+
+---
+
+## 3. Signature
+
+Generated using:
+
+Header
++
+Payload
++
+Secret Key
+
+Example:
+
+HMACSHA256(
+  base64(Header) + "." + base64(Payload),
+  SECRET_KEY
+)
+
+Purpose:
+
+✅ Detect token tampering
+
+If payload changes:
+
+role = user
+↓
+role = admin
+
+Signature verification fails.
+
+---
+
+# JWT Authentication Flow
+
+1. User Login
+      ↓
+2. Verify Credentials
+      ↓
+3. Generate JWT
+      ↓
+4. Send JWT to Client
+      ↓
+5. Client Stores Token
+      ↓
+6. Client Sends Token
+      ↓
+7. Server Verifies Token
+      ↓
+8. Allow Access
+
+---
+
+# Installing JWT Library
+
+npm install jsonwebtoken
+
+---
+
+# Generate a JWT
+
+const jwt = require("jsonwebtoken");
+
+const token = jwt.sign(
+  {
+    userId: 1,
+    email: "bilal@gmail.com"
+  },
+  process.env.JWT_SECRET,
+  {
+    expiresIn: "1h"
+  }
+);
+
+console.log(token);
+
+Example output:
+
+eyJhbGciOi...
+
+---
+
+# Verify a JWT
+
+const decoded = jwt.verify(
+  token,
+  process.env.JWT_SECRET
+);
+
+console.log(decoded);
+
+Output:
+
+{
+  userId: 1,
+  email: "bilal@gmail.com",
+  iat: 1710000000,
+  exp: 1710003600
+}
+
+---
+
+# Login Example
+
+app.post("/login", async (req, res) => {
+
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(401).json({
+      message: "Invalid Credentials"
+    });
+  }
+
+  const isValid =
+      await bcrypt.compare(
+          password,
+          user.password
+      );
+
+  if (!isValid) {
+    return res.status(401).json({
+      message: "Invalid Credentials"
+    });
+  }
+
+  const token = jwt.sign(
+      {
+          userId: user._id,
+          role: user.role
+      },
+      process.env.JWT_SECRET,
+      {
+          expiresIn: "1h"
+      }
+  );
+
+  res.json({ token });
+});
+
+---
+
+# Authentication Middleware
+
+Protect routes using JWT.
+
+const jwt = require("jsonwebtoken");
+
+const auth = (req, res, next) => {
+
+  const authHeader =
+      req.headers.authorization;
+
+  if (!authHeader) {
+      return res.status(401).json({
+          message: "Token Missing"
+      });
+  }
+
+  const token =
+      authHeader.split(" ")[1];
+
+  try {
+
+      const decoded =
+          jwt.verify(
+              token,
+              process.env.JWT_SECRET
+          );
+
+      req.user = decoded;
+
+      next();
+
+  } catch (error) {
+
+      return res.status(401).json({
+          message: "Invalid Token"
+      });
+  }
+};
+
+---
+
+# Protected Route
+
+app.get(
+  "/profile",
+  auth,
+  async (req, res) => {
+
+      res.json({
+          user: req.user
+      });
+
+  }
+);
+
+Request:
+
+GET /profile
+Authorization: Bearer eyJhb...
+
+---
+
+# Access Token vs Refresh Token
+
+## Access Token
+
+Lifetime:
+15 min - 1 hour
+
+Used for:
+
+API Access
+
+---
+
+## Refresh Token
+
+Lifetime:
+Days or Months
+
+Used to generate new access tokens.
+
+Flow:
+
+Login
+ ↓
+Access Token (15 min)
+Refresh Token (7 days)
+
+Access Token Expires
+ ↓
+Use Refresh Token
+ ↓
+Get New Access Token
+
+---
+
+# Advantages of JWT
+
+### Stateless
+
+No Session Storage
+
+---
+
+### Scalable
+
+Works well with:
+
+* Microservices
+* Load Balancers
+* Distributed Systems
+
+---
+
+### Portable
+
+Can be used across:
+
+* Web Apps
+* Mobile Apps
+* APIs
+
+---
+
+# Common Security Mistakes
+
+### ❌ Storing Sensitive Data
+
+Never put:
+
+{
+  "password": "123456"
+}
+
+inside JWT.
+
+Payload is Base64 encoded, not encrypted.
+
+Anyone can decode it.
+
+---
+
+### ❌ Weak Secret
+
+Bad:
+
+"123"
+
+Good:
+
+"jshf73jhd83hd83hd8d9d9s"
+
+---
+
+### ❌ No Expiration
+
+Bad:
+
+jwt.sign(payload, secret);
+
+Good:
+
+jwt.sign(payload, secret, {
+  expiresIn: "1h"
+});
+
+---
+
+# JWT vs Session Authentication
+
+| Feature         | JWT       | Session       |
+| --------------- | --------- | ------------- |
+| Server Storage  | No        | Yes           |
+| Stateless       | Yes       | No            |
+| Scalability     | High      | Medium        |
+| Mobile Friendly | Yes       | Yes           |
+| Easy Logout     | Harder    | Easier        |
+| Microservices   | Excellent | Less Suitable |
+
+---
+
+# Interview Answer (2-Minute Version)
+
+> JWT (JSON Web Token) is a compact token-based authentication mechanism used to securely transmit user 
+information between a client and server. A JWT consists of three parts: Header, Payload, and Signature. 
+After a successful login, the server generates a signed token and sends it to the client. 
+The client includes the token in the Authorization header for subsequent requests. 
+The server verifies the token signature before granting access. 
+JWT is stateless because the server does not store session data, making it highly scalable and suitable for REST APIs 
+and microservices. However, sensitive data should never be stored in the payload because it is encoded but not encrypted.
