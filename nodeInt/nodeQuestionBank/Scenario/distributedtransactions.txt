@@ -1,0 +1,431 @@
+How to handle distributed transactions?
+Distributed transactions occur when a single business operation spans **multiple services or databases**.
+
+Example:
+
+```text
+Order Service
+      |
+      +--> Payment Service
+      |
+      +--> Inventory Service
+      |
+      +--> Shipping Service
+```
+
+If one step fails after others have succeeded, maintaining consistency becomes challenging.
+
+---
+
+# The Problem
+
+Suppose a customer places an order:
+
+### Step 1
+
+Order created ✅
+
+### Step 2
+
+Payment charged ✅
+
+### Step 3
+
+Inventory update ❌
+
+Now you have:
+
+```text
+Order Created
+Payment Deducted
+Inventory Not Reserved
+```
+
+The system is inconsistent.
+
+---
+
+# Why Traditional Transactions Don't Work
+
+Within a single database:
+
+```sql
+BEGIN;
+UPDATE accounts ...
+UPDATE orders ...
+COMMIT;
+```
+
+ACID transactions guarantee consistency.
+
+But in microservices:
+
+```text
+Service A Database
+Service B Database
+Service C Database
+```
+
+A single database transaction cannot span all services efficiently.
+
+---
+
+# Common Solutions
+
+## 1. Two-Phase Commit (2PC)
+
+### Phase 1: Prepare
+
+Coordinator asks:
+
+```text
+Can you commit?
+```
+
+Services respond:
+
+```text
+YES
+YES
+YES
+```
+
+### Phase 2: Commit
+
+Coordinator sends:
+
+```text
+COMMIT
+```
+
+All services commit.
+
+```text
+Coordinator
+     |
+------------------
+|       |        |
+S1      S2      S3
+```
+
+### Pros
+
+* Strong consistency
+
+### Cons
+
+* Slow
+* Coordinator becomes bottleneck
+* Blocking protocol
+* Doesn't scale well
+
+Modern microservices rarely use 2PC.
+
+---
+
+# 2. Saga Pattern (Most Common)
+
+Instead of one big transaction:
+
+```text
+Transaction A
+Transaction B
+Transaction C
+```
+
+Each service commits independently.
+
+If a later step fails, execute compensating actions.
+
+---
+
+## Example: E-commerce Order
+
+### Forward Flow
+
+```text
+Create Order
+      ↓
+Charge Payment
+      ↓
+Reserve Inventory
+      ↓
+Create Shipment
+```
+
+---
+
+### Failure Scenario
+
+```text
+Create Order        ✅
+Charge Payment      ✅
+Reserve Inventory   ❌
+```
+
+Compensation:
+
+```text
+Refund Payment
+Cancel Order
+```
+
+Result:
+
+```text
+System Consistent Again
+```
+
+---
+
+# Saga Types
+
+## A. Choreography
+
+Services communicate via events.
+
+```text
+Order Created
+      ↓
+Payment Service
+      ↓
+Payment Completed
+      ↓
+Inventory Service
+      ↓
+Inventory Reserved
+```
+
+Example using:
+
+* RabbitMQ
+* Apache Kafka
+
+### Pros
+
+* No central coordinator
+* Highly decoupled
+
+### Cons
+
+* Difficult to track flow
+* Complex debugging
+
+---
+
+## B. Orchestration
+
+A central Saga Orchestrator controls the workflow.
+
+```text
+Saga Orchestrator
+       |
+       +--> Order Service
+       |
+       +--> Payment Service
+       |
+       +--> Inventory Service
+```
+
+Example:
+
+```javascript
+await createOrder();
+
+try {
+   await chargePayment();
+   await reserveInventory();
+   await createShipment();
+} catch(err) {
+   await refundPayment();
+   await cancelOrder();
+}
+```
+
+### Pros
+
+* Easier monitoring
+* Easier debugging
+
+### Cons
+
+* Extra service to maintain
+
+---
+
+# Event-Driven Approach
+
+Using a message broker:
+
+```text
+Order Created Event
+          |
+          v
+      Kafka Topic
+          |
+ -------------------
+ |        |        |
+Payment Inventory Shipping
+```
+
+Benefits:
+
+* Loose coupling
+* Scalability
+* Retry capability
+
+---
+
+# Idempotency
+
+Retries are common in distributed systems.
+
+Problem:
+
+```text
+Payment Request
+       |
+Timeout
+       |
+Retry
+```
+
+Without protection:
+
+```text
+Customer charged twice
+```
+
+Solution:
+
+```http
+Idempotency-Key: order-123
+```
+
+Each service stores processed keys.
+
+Repeated requests produce the same result.
+
+---
+
+# Outbox Pattern
+
+A common problem:
+
+```text
+Save Order to DB
+      |
+Publish Event
+```
+
+What if the service crashes between them?
+
+```text
+Order Saved
+Event Never Published
+```
+
+Inconsistency occurs.
+
+---
+
+### Outbox Solution
+
+```text
+DB Transaction
+   |
+   +--> Save Order
+   |
+   +--> Save Event To Outbox Table
+```
+
+Background worker:
+
+```text
+Read Outbox
+      |
+Publish Event
+      |
+Mark Processed
+```
+
+Guarantees eventual delivery.
+
+---
+
+# Retry Strategy
+
+For transient failures:
+
+```text
+Retry 1 -> 1 sec
+Retry 2 -> 2 sec
+Retry 3 -> 4 sec
+```
+
+Use:
+
+```text
+Exponential Backoff
+```
+
+Avoid immediate retries.
+
+---
+
+# Monitoring Distributed Transactions
+
+Track:
+
+* Correlation IDs
+* Request IDs
+* Saga IDs
+
+Example:
+
+```text
+Saga-ID: ORDER-123
+```
+
+Use distributed tracing:
+
+* [OpenTelemetry](https://opentelemetry.io?utm_source=chatgpt.com)
+* [Jaeger](https://www.jaegertracing.io?utm_source=chatgpt.com)
+
+This allows tracing the entire transaction across services.
+
+---
+
+# Real-World Example
+
+### Order Placement
+
+```text
+1. Create Order
+2. Process Payment
+3. Reserve Inventory
+4. Create Shipment
+```
+
+If inventory fails:
+
+```text
+Compensation:
+    Refund Payment
+    Cancel Order
+```
+
+This is how many modern e-commerce systems handle distributed transactions.
+
+---
+
+# Interview Answer (2-Minute Version)
+
+> In microservices, I avoid distributed ACID transactions because they don't scale well. 
+While Two-Phase Commit provides strong consistency, it introduces blocking and coordination overhead. 
+Instead, I typically use the Saga Pattern, where each service performs a local transaction and publishes an event. 
+If a later step fails, compensating transactions are executed to undo previous actions. For reliable event delivery, 
+I use the Outbox Pattern, and for communication between services I use message brokers such as Apache Kafka or RabbitMQ. 
+I also ensure idempotency for retries and use distributed tracing with [OpenTelemetry]
+(https://opentelemetry.io?utm_source=chatgpt.com) to track transactions across services. 
+This approach provides eventual consistency, scalability, and resilience in distributed systems.

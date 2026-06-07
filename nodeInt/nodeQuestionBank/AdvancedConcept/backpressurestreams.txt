@@ -1,0 +1,284 @@
+What is backpressure in streams?
+
+**Backpressure** is a mechanism that prevents a fast data producer from overwhelming a slower data consumer.
+
+In simple terms:
+
+> Backpressure occurs when data is being generated faster than it can be processed or consumed.
+
+---
+
+## Real-Life Example
+
+Imagine a water pipe:
+
+Water Tank
+    |
+    | 100 L/min
+    v
+ Pipe
+    |
+    | 10 L/min
+    v
+ Bucket
+
+The tank sends water much faster than the bucket can accept it.
+
+Result:
+
+Overflow ❌
+
+Backpressure is the mechanism that tells the tank:
+
+"Slow down, the bucket isn't keeping up."
+
+---
+
+# In Node.js Streams
+
+Suppose you're reading a huge file and writing it to a network connection.
+
+Read Stream
+     |
+     | 100 MB/s
+     v
+Write Stream
+     |
+     | 10 MB/s
+     v
+Disk/Network
+
+The readable stream produces data faster than the writable stream can consume it.
+
+Without backpressure:
+
+Chunks accumulate in memory
+        |
+        v
+High Memory Usage
+        |
+        v
+Application Crash ❌
+
+---
+
+# How Node.js Handles It
+
+The `write()` method returns a boolean.
+
+### When Buffer Has Space
+
+writable.write(chunk);
+
+returns:
+
+true
+
+Meaning:
+
+Keep sending data
+
+---
+
+### When Buffer Is Full
+
+const canContinue = writable.write(chunk);
+
+returns:
+
+false
+
+Meaning:
+
+Stop sending data
+
+---
+
+# Manual Backpressure Example
+
+const fs = require('fs');
+
+const readStream = fs.createReadStream('input.txt');
+const writeStream = fs.createWriteStream('output.txt');
+
+readStream.on('data', (chunk) => {
+    const canWrite = writeStream.write(chunk);
+
+    if (!canWrite) {
+        readStream.pause();
+    }
+});
+
+writeStream.on('drain', () => {
+    readStream.resume();
+});
+
+### Flow
+
+Read Stream
+      |
+      v
+write(chunk)
+      |
+      v
+Buffer Full?
+      |
+    Yes
+      |
+pause()
+      |
+drain event
+      |
+resume()
+
+---
+
+# The `drain` Event
+
+When the writable stream has processed enough data and has room again:
+
+writeStream.on('drain', () => {
+    console.log('Buffer available');
+});
+
+Node.js emits the `drain` event.
+
+---
+
+# Using `pipe()`
+
+Most of the time, you don't handle backpressure manually.
+
+readStream.pipe(writeStream);
+
+Node.js automatically:
+
+* Pauses the readable stream
+* Waits for the writable stream
+* Resumes when ready
+
+Read Stream
+      |
+     pipe()
+      |
+Write Stream
+
+Backpressure handling is built in.
+
+---
+
+# Why Is Backpressure Important?
+
+Without it:
+
+Fast Producer
+      |
+      v
+Slow Consumer
+      |
+Huge Memory Buffer
+      |
+Out Of Memory ❌
+
+With it:
+
+Fast Producer
+      |
+Pause
+      |
+Slow Consumer
+      |
+Resume
+      |
+Stable Memory ✅
+
+---
+
+# Example: Downloading a Large File
+
+### Without Streams
+
+const data = fs.readFileSync('5gb.zip');
+
+res.send(data);
+
+5 GB loaded into memory ❌
+
+---
+
+### With Streams
+
+fs.createReadStream('5gb.zip')
+  .pipe(res);
+
+Chunk
+Chunk
+Chunk
+Chunk
+
+Backpressure automatically controls the flow.
+
+---
+
+# Internal Buffering
+
+Each stream has an internal buffer.
+
+Readable Stream
+       |
+       v
+  Internal Buffer
+       |
+       v
+Writable Stream
+
+When the buffer reaches the `highWaterMark` limit:
+
+Buffer Full
+    |
+write() => false
+
+Backpressure kicks in.
+
+---
+
+# Interview Example
+
+Imagine:
+
+Read Stream Speed  = 100 MB/s
+Write Stream Speed = 20 MB/s
+
+Without backpressure:
+
+Memory grows indefinitely ❌
+
+With backpressure:
+
+Readable pauses
+Writable catches up
+Readable resumes ✅
+
+---
+
+# Benefits of Backpressure
+
+✅ Prevents memory overflow
+
+✅ Keeps memory usage stable
+
+✅ Improves application reliability
+
+✅ Efficient handling of large files
+
+✅ Enables streaming of huge datasets
+
+---
+
+# Interview Answer (Short)
+
+> Backpressure is a flow-control mechanism in Node.js streams that prevents a fast producer from overwhelming 
+a slower consumer. When a writable stream's buffer becomes full, `write()` returns `false`, signaling the readable 
+stream to pause. Once the buffer is drained, the `drain` event is emitted, allowing the readable stream to resume. 
+The `pipe()` method handles backpressure automatically, ensuring efficient memory usage and stable performance 
+when processing large amounts of data.

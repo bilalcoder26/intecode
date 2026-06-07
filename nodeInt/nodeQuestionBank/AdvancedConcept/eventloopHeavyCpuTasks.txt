@@ -1,0 +1,292 @@
+How event loop handles heavy CPU tasks
+
+The short answer is:
+
+> **It doesn't handle them well.** Heavy CPU tasks block the event loop and prevent Node.js from processing other requests.
+
+---
+
+# Understanding the Event Loop
+
+Node.js runs JavaScript on a **single main thread**.
+
+          Node.js Process
+                 |
+          Event Loop
+                 |
+      -------------------
+      |    |    |    |
+   Task1 Task2 Task3 Task4
+
+The event loop processes tasks one at a time.
+
+---
+
+# I/O Tasks vs CPU Tasks
+
+## I/O Task (Good for Node.js)
+
+app.get('/users', async (req, res) => {
+    const users = await User.find();
+    res.json(users);
+});
+
+Database query:
+
+Event Loop
+    |
+Send DB Request
+    |
+Continue Handling Requests
+    |
+DB Response Arrives
+    |
+Callback Executed
+
+The event loop remains free.
+
+---
+
+## CPU Task (Problem)
+
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(45));
+
+Event Loop
+    |
+Heavy Calculation
+    |
+Blocked ❌
+
+While the calculation runs:
+
+* No new requests are processed
+* No timers execute
+* No callbacks run
+
+---
+
+# Example
+
+setTimeout(() => {
+    console.log('Timer');
+}, 0);
+
+function heavyTask() {
+    for (let i = 0; i < 10000000000; i++) {}
+}
+
+heavyTask();
+
+console.log('Done');
+
+Output:
+
+Done
+Timer
+
+Why?
+
+Event Loop
+   |
+heavyTask()
+   |
+Blocked for several seconds
+   |
+Finally completes
+   |
+Processes Timer
+
+Even though the timer was scheduled for 0 ms, it had to wait.
+
+---
+
+# What Happens Internally?
+
+Client Request
+      |
+Event Loop
+      |
+Heavy CPU Task
+      |
+--------------------------------
+| Event Loop Blocked          |
+| Timers Waiting              |
+| Requests Waiting            |
+| Callbacks Waiting           |
+--------------------------------
+
+Everything queues up behind the CPU task.
+
+---
+
+# Why Database Calls Don't Block
+
+Consider:
+
+await User.find();
+
+This operation is delegated.
+
+Event Loop
+    |
+Database Driver
+    |
+OS / Database
+    |
+Response
+    |
+Callback Queue
+
+The event loop is free while waiting.
+
+---
+
+# Why CPU Tasks Block
+
+const result = fibonacci(45);
+
+Event Loop
+    |
+Execute JS
+    |
+Execute JS
+    |
+Execute JS
+
+The computation happens on the main thread itself.
+
+There is nothing to delegate.
+
+---
+
+# Solutions
+
+## 1. Worker Threads (Recommended)
+
+Move CPU-heavy work to another thread.
+
+Main Thread
+      |
+      |------ Worker Thread
+      |
+Handles Requests
+
+Example:
+
+const { Worker } = require('worker_threads');
+
+const worker = new Worker('./worker.js');
+
+Use for:
+
+* Image processing
+* Video encoding
+* Machine learning
+* Cryptography
+* Large calculations
+
+---
+
+## 2. Child Processes
+
+Run heavy work in a separate process.
+
+Node Process
+      |
+      |---- Child Process
+
+Example:
+
+const { fork } = require('child_process');
+
+Useful when:
+
+* Running external programs
+* Isolating heavy jobs
+
+---
+
+## 3. Queue + Background Workers
+
+For long-running tasks.
+
+Request
+   |
+RabbitMQ Queue
+   |
+Worker
+
+Tools:
+
+* RabbitMQ
+* BullMQ
+* Apache Kafka
+
+The API responds immediately while work happens in the background.
+
+---
+
+## 4. Break Work Into Chunks
+
+Instead of:
+
+for (let i = 0; i < 1e9; i++) {
+    doWork();
+}
+
+Process smaller batches:
+
+function processChunk(start) {
+    const end = start + 1000;
+
+    for (let i = start; i < end; i++) {
+        doWork();
+    }
+
+    if (end < 1000000) {
+        setImmediate(() => processChunk(end));
+    }
+}
+
+This allows the event loop to process other events between chunks.
+
+---
+
+# Visual Comparison
+
+### Blocking CPU Task
+
+Request 1
+Request 2
+Request 3
+      |
+Heavy Calculation
+      |
+Everything Waits ❌
+
+---
+
+### Worker Thread
+
+Request 1
+Request 2
+Request 3
+      |
+Worker Thread
+      |
+Main Event Loop Free ✅
+
+---
+
+# Interview Answer
+
+> The Node.js event loop runs on a single thread and executes JavaScript code sequentially. 
+Heavy CPU-intensive tasks, such as complex calculations or image processing, run on the main thread and block the event loop,
+ preventing it from handling other requests, timers, and callbacks. To avoid blocking, CPU-heavy work should be offloaded 
+ to Worker Threads, child processes, or background workers. I/O operations like database queries and file reads do not 
+ block the event loop because they are delegated to the operating system or thread pool and handled asynchronously.

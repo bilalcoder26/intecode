@@ -1,0 +1,33 @@
+What is Express.js?
+
+**Express.js** is a minimal, flexible web application framework for **Node.js** that provides a robust set of features
+ for building web and mobile applications, APIs, and backend services.
+
+Think of it as the "lightweight layer" on top of Node.js's native HTTP module that makes building web servers 
+much simpler and more expressive.
+
+
+
+## Key Features
+
+| Feature | What It Does |
+|---------|--------------|
+| **Routing** | Define endpoints with HTTP methods (GET, POST, PUT, DELETE) |
+| **Middleware** | Chain functions to handle requests/responses (logging, auth, parsing) |
+| **Template engines** | Render dynamic HTML (Pug, EJS, Handlebars) |
+| **Static file serving** | Serve CSS, images, client-side JS easily |
+| **Error handling** | Centralized error management |
+
+
+
+
+## Why Use Express?
+
+| Benefit | Description |
+|---------|-------------|
+| **Minimal & unopinionated** | No "right way" enforced; you structure as needed |
+| **Huge ecosystem** | Thousands of middleware packages available |
+| **Massive community** | Extensive documentation, tutorials, and Stack Overflow answers |
+| **Performance** | Lightweight wrapper over Node.js HTTP module |
+| **Learning curve** | Low barrier to entry, especially with JavaScript knowledge |
+

@@ -1,0 +1,195 @@
+Difference between worker threads and cluster
+
+
+# Worker Threads vs Cluster
+
+| Feature         | Worker Threads                          | Cluster                                    |
+| --------------- | --------------------------------------- | ------------------------------------------ |
+| Purpose         | Run CPU-intensive tasks in parallel     | Handle more incoming requests              |
+| Unit            | Multiple threads                        | Multiple processes                         |
+| Memory          | Can share memory                        | Separate memory for each process           |
+| Communication   | Fast (`postMessage`, SharedArrayBuffer) | IPC (Inter-Process Communication)          |
+| Overhead        | Lightweight                             | Heavyweight                                |
+| Crash Impact    | Thread crash may affect process         | Worker process crash doesn't affect others |
+| CPU Utilization | Parallel computation                    | Multi-core request handling                |
+| Module          | `worker_threads`                        | `cluster`                                  |
+| Best For        | Image processing, ML, encryption        | Web servers, APIs                          |
+
+---
+
+# Worker Threads
+
+Imagine your application needs to perform a heavy calculation.
+
+Main Process
+    |
+    |---- Thread 1
+    |---- Thread 2
+    |---- Thread 3
+```
+
+All threads belong to the **same process**.
+
+### Example
+
+const { Worker } = require('worker_threads');
+
+new Worker('./worker.js');
+
+### Use Cases
+
+* Image processing
+* Video encoding
+* Data compression
+* PDF generation
+* Machine learning
+* Cryptography
+* Large mathematical calculations
+
+### Advantage
+
+Threads can share memory:
+
+const buffer = new SharedArrayBuffer(1024);
+
+This makes communication much faster.
+
+---
+
+# Cluster
+
+Cluster creates multiple **Node.js processes**.
+
+Server
+ |
+ -------------------
+ |    |    |    |
+ P1   P2   P3   P4
+
+Each process:
+
+* Has its own event loop
+* Has its own memory
+* Can handle requests independently
+
+### Example
+
+const cluster = require('cluster');
+const os = require('os');
+
+if (cluster.isPrimary) {
+    for (let i = 0; i < os.cpus().length; i++) {
+        cluster.fork();
+    }
+}
+
+### Use Cases
+
+* REST APIs
+* Express servers
+* GraphQL servers
+* High-traffic applications
+
+### Advantage
+
+If one worker crashes:
+
+Worker 1 ❌
+Worker 2 ✅
+Worker 3 ✅
+Worker 4 ✅
+
+Other workers continue serving requests.
+
+---
+
+# Memory Difference
+
+## Worker Threads
+
+Process
+   |
+----------------
+|      |       |
+T1     T2      T3
+      Shared Memory
+
+Can share data directly.
+
+---
+
+## Cluster
+
+Process 1
+Memory A
+
+Process 2
+Memory B
+
+Process 3
+Memory C
+
+Memory is isolated.
+
+To share data, use:
+
+* Redis
+* Database
+* Message queues
+
+---
+
+# Real Example
+
+## Scenario 1: Image Processing API
+
+Upload Image
+      |
+Resize Image
+      |
+Return Result
+
+Image resizing is CPU-intensive.
+
+✅ Use **Worker Threads**
+
+---
+
+## Scenario 2: E-commerce Website
+
+10,000 Users
+      |
+ REST API
+
+Need to handle many concurrent requests.
+
+✅ Use **Cluster**
+
+---
+
+# Can We Use Both Together?
+
+Yes, and many production systems do.
+
+Load Balancer
+      |
+ ---------------------
+ |         |         |
+Node 1   Node 2   Node 3
+(Cluster Processes)
+ |
+ Worker Threads
+
+Example:
+
+* Cluster handles thousands of API requests.
+* Worker threads process images, PDFs, or reports.
+
+---
+
+# Interview Answer (Short)
+
+> The Cluster module creates multiple Node.js processes to utilize all CPU cores and handle more incoming requests, 
+making it ideal for scaling web servers. Worker Threads create multiple threads within the same process to execute 
+CPU-intensive tasks in parallel without blocking the event loop. Cluster is used for request-level scalability, 
+while Worker Threads are used for computation-level parallelism.

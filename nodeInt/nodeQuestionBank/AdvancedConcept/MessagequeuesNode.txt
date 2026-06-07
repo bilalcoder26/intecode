@@ -1,0 +1,464 @@
+Message queues (RabbitMQ/Kafka) in Node.js
+
+A **message queue** is a system that enables different services or parts of an application to communicate **asynchronously**.
+
+Instead of Service A directly calling Service B and waiting for a response, Service A sends a message to a queue, 
+and Service B processes it later.
+
+### Without Queue
+
+User Request
+     |
+     v
+Node.js App
+     |
+     v
+Email Service
+
+If the Email Service is slow or down, the request is affected.
+
+### With Queue
+
+User Request
+     |
+     v
+Node.js App (Producer)
+     |
+     v
+ Message Queue
+     |
+     v
+Worker (Consumer)
+     |
+     v
+Email Service
+
+The user gets a response immediately while the email is processed in the background.
+
+---
+
+# Why Use Message Queues?
+
+### 1. Asynchronous Processing
+
+Instead of making users wait:
+
+app.post("/register", async (req, res) => {
+   await sendWelcomeEmail(); // slow
+   res.send("User Registered");
+});
+
+Use a queue:
+
+app.post("/register", async (req, res) => {
+   queue.send("welcome-email");
+   res.send("User Registered");
+});
+
+Email is processed later.
+
+---
+
+### 2. Decoupling Services
+
+Services become independent.
+
+User Service
+     |
+     v
+Queue
+     |
+----------------
+|              |
+v              v
+Email      Notification
+Service     Service
+```
+
+If Email Service crashes, User Service still works.
+
+---
+
+### 3. Reliability
+
+Messages remain in the queue until processed.
+
+If a consumer crashes:
+
+Producer -> Queue -> Consumer (Crash)
+                     |
+                     v
+              Message remains
+
+Another consumer can process it later.
+
+---
+
+### 4. Scalability
+
+Add more consumers to process messages faster.
+
+         Queue
+           |
+---------------------
+|         |         |
+v         v         v
+Worker1 Worker2 Worker3
+
+---
+
+# RabbitMQ
+
+RabbitMQ is a traditional message broker implementing the **AMQP protocol**.
+
+Good for:
+
+* Background jobs
+* Email sending
+* Notifications
+* Order processing
+* Task queues
+
+---
+
+## RabbitMQ Architecture
+
+Producer
+    |
+    v
+ Exchange
+    |
+    v
+  Queue
+    |
+    v
+ Consumer
+
+### Producer
+
+Sends messages.
+
+channel.sendToQueue(
+   "emailQueue",
+   Buffer.from("Send Email")
+);
+
+---
+
+### Queue
+
+Stores messages.
+
+emailQueue
+-------------
+Send Email
+Send SMS
+Generate PDF
+
+---
+
+### Consumer
+
+Receives messages.
+
+channel.consume("emailQueue", (msg) => {
+   console.log(msg.content.toString());
+});
+
+---
+
+## RabbitMQ Example
+
+### Install
+
+npm install amqplib
+
+### Producer
+
+const amqp = require("amqplib");
+
+async function sendMessage() {
+   const conn = await amqp.connect("amqp://localhost");
+   const channel = await conn.createChannel();
+
+   await channel.assertQueue("emailQueue");
+
+   channel.sendToQueue(
+      "emailQueue",
+      Buffer.from("Welcome Email")
+   );
+}
+
+### Consumer
+
+const amqp = require("amqplib");
+
+async function consume() {
+   const conn = await amqp.connect("amqp://localhost");
+   const channel = await conn.createChannel();
+
+   await channel.assertQueue("emailQueue");
+
+   channel.consume("emailQueue", (msg) => {
+      console.log(msg.content.toString());
+
+      channel.ack(msg);
+   });
+}
+
+---
+
+## RabbitMQ Acknowledgment
+
+After processing:
+
+channel.ack(msg);
+
+If the consumer crashes before ACK:
+
+Queue
+  |
+  v
+Consumer (Crash)
+
+RabbitMQ re-delivers the message.
+
+This ensures **at-least-once delivery**.
+
+---
+
+# Kafka
+
+Kafka is a **distributed event streaming platform** designed for massive throughput.
+
+Used by companies processing millions of events:
+
+* Payments
+* Analytics
+* Logs
+* Clickstreams
+* Real-time data pipelines
+
+---
+
+## Kafka Architecture
+
+Producer
+    |
+    v
+  Topic
+    |
+----------------
+|              |
+v              v
+Consumer1   Consumer2
+
+Kafka stores events in **Topics**.
+
+---
+
+## Topic Example
+
+order-topic
+
+Offset 0 -> Order #1
+Offset 1 -> Order #2
+Offset 2 -> Order #3
+
+Messages are stored on disk.
+
+Consumers read by offset.
+
+---
+
+## Kafka Features
+
+### High Throughput
+
+Millions of messages per second.
+
+### Message Retention
+
+Messages stay for days/weeks.
+
+Topic
+ |
+Order1
+Order2
+Order3
+
+Even after consumption.
+
+---
+
+### Replay Messages
+
+Consumer can read old events again.
+
+Offset 0
+Offset 1
+Offset 2
+
+Useful for analytics and auditing.
+
+---
+
+## Kafka Example
+
+Install:
+
+npm install kafkajs
+
+### Producer
+
+const { Kafka } = require("kafkajs");
+
+const kafka = new Kafka({
+   clientId: "app",
+   brokers: ["localhost:9092"]
+});
+
+const producer = kafka.producer();
+
+await producer.connect();
+
+await producer.send({
+   topic: "orders",
+   messages: [
+      { value: "Order Created" }
+   ]
+});
+
+---
+
+### Consumer
+
+const consumer = kafka.consumer({
+   groupId: "order-group"
+});
+
+await consumer.connect();
+
+await consumer.subscribe({
+   topic: "orders"
+});
+
+await consumer.run({
+   eachMessage: async ({ message }) => {
+      console.log(message.value.toString());
+   }
+});
+```
+
+---
+
+# RabbitMQ vs Kafka
+
+| Feature         | RabbitMQ                    | Kafka                           |
+| --------------- | --------------------------- | ------------------------------- |
+| Purpose         | Task Queue                  | Event Streaming                 |
+| Throughput      | High                        | Very High                       |
+| Message Storage | Queue                       | Distributed Log                 |
+| Replay Messages | No                          | Yes                             |
+| Ordering        | Per Queue                   | Per Partition                   |
+| Latency         | Very Low                    | Low                             |
+| Best For        | Jobs, Emails, Notifications | Analytics, Event-Driven Systems |
+| Retention       | Until Consumed              | Configurable Days/Weeks         |
+
+---
+
+# When to Use RabbitMQ?
+
+Choose RabbitMQ when:
+
+✅ Send emails
+
+✅ Generate PDFs
+
+✅ Process background jobs
+
+✅ Notification systems
+
+✅ Order fulfillment tasks
+
+Example:
+
+User Registration
+       |
+       v
+ RabbitMQ
+       |
+       v
+ Send Welcome Email
+
+---
+
+# When to Use Kafka?
+
+Choose Kafka when:
+
+✅ Event-driven architecture
+
+✅ Real-time analytics
+
+✅ Audit logs
+
+✅ Payment events
+
+✅ Microservices communication at scale
+
+Example:
+
+```text
+Order Created
+      |
+      v
+Kafka Topic
+      |
+------------------------
+|          |           |
+v          v           v
+Billing  Analytics  Shipping
+```
+
+All services receive the same event independently.
+
+---
+
+# Common Node.js Interview Question
+
+### RabbitMQ vs Kafka in one line?
+
+* **RabbitMQ** → "I need a worker to process this task."
+* **Kafka** → "I need many services to react to this event."
+
+### Real Production Example
+
+```text
+E-commerce Application
+
+Order Service
+      |
+      v
+Kafka (order-created)
+      |
+--------------------------
+|           |            |
+v           v            v
+Payment   Inventory   Analytics
+Service   Service     Service
+```
+
+For background jobs inside a service:
+
+```text
+Order Service
+      |
+      v
+RabbitMQ
+      |
+      v
+Send Email Worker
+```
+
+A common architecture is to use **Kafka for inter-service events** and **RabbitMQ for background task processing**.

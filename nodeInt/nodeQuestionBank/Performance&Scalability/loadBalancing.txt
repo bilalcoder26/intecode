@@ -1,0 +1,236 @@
+### What is Load Balancing in Node.js?
+
+Load balancing is the process of distributing incoming client requests across multiple instances of a Node.js application 
+so that no single server becomes overloaded.
+
+Instead of sending all requests to one server:
+
+Client Requests
+       |
+    App Server
+
+we distribute them:
+
+            Load Balancer
+                  |
+      -------------------------
+      |           |           |
+   Node-1      Node-2      Node-3
+
+The load balancer sits in front of your Node.js servers and decides which server should handle each request.
+
+---
+
+## Why Do We Need Load Balancing?
+
+Suppose your Node.js server can handle 1,000 requests/sec.
+
+If 10,000 users arrive simultaneously:
+
+10,000 Requests
+      |
+ Single Node Server
+      |
+   Overloaded ❌
+
+With load balancing:
+
+10,000 Requests
+       |
+ Load Balancer
+       |
+--------------------
+|        |         |
+1000    1000     1000
+Reqs    Reqs     Reqs
+
+Traffic is distributed evenly, improving:
+
+* Performance
+* Availability
+* Scalability
+* Fault tolerance
+
+---
+
+## How It Works
+
+1. Client sends a request.
+2. Request reaches the load balancer.
+3. Load balancer chooses a Node.js instance.
+4. Selected instance processes the request.
+5. Response is returned to the client.
+
+Browser
+   |
+   v
+Load Balancer
+   |
+----------------
+|      |       |
+App1  App2   App3
+
+---
+
+## Common Load Balancing Algorithms
+
+### 1. Round Robin
+
+Requests are distributed one by one.
+
+Request 1 → App1
+Request 2 → App2
+Request 3 → App3
+Request 4 → App1
+
+Most common strategy.
+
+---
+
+### 2. Least Connections
+
+Request goes to the server with the fewest active connections.
+
+App1 -> 20 users
+App2 -> 5 users
+App3 -> 12 users
+
+Next request -> App2
+```
+
+Useful when requests take different amounts of time.
+
+---
+
+### 3. IP Hash
+
+Client IP determines the server.
+
+192.168.1.1 → App1
+192.168.1.2 → App2
+
+Helps maintain session consistency.
+
+---
+
+## Load Balancing with NGINX
+
+A common setup is:
+
+Internet
+    |
+ NGINX
+    |
+-----------------------
+|         |          |
+3000     3001      3002
+
+Example configuration:
+
+http {
+    upstream node_app {
+        server localhost:3000;
+        server localhost:3001;
+        server localhost:3002;
+    }
+
+    server {
+        listen 80;
+
+        location / {
+            proxy_pass http://node_app;
+        }
+    }
+}
+
+Here, NGINX forwards requests to different Node.js instances.
+
+---
+
+## Node.js Cluster vs Load Balancer
+
+Many people confuse these.
+
+| Cluster                              | Load Balancer                              |
+| ------------------------------------ | ------------------------------------------ |
+| Runs multiple workers on one machine | Distributes traffic across servers         |
+| Uses CPU cores efficiently           | Distributes network traffic                |
+| Internal to Node.js                  | Usually external (NGINX, HAProxy, AWS ELB) |
+
+### Cluster
+
+Server
+ |
+-------------------
+|   |   |   |   |
+W1 W2 W3 W4 W5
+```
+
+### Load Balancer
+
+          LB
+           |
+------------------------
+|          |           |
+Server1  Server2    Server3
+
+In production, you often use **both**:
+
+* Cluster inside each server.
+* Load balancer across servers.
+
+---
+
+## Session Handling Problem
+
+Imagine:
+
+Request 1 → App1
+Request 2 → App2
+
+If session data is stored in memory:
+
+const sessions = {};
+
+App2 won't know about App1's session.
+
+### Solution
+
+Store sessions in:
+
+* Redis
+* Database
+
+      App1
+        \
+         Redis
+        /
+      App2
+
+Now all instances share session data.
+
+---
+
+## Real-World Production Flow
+
+Users
+  |
+Load Balancer
+  |
+--------------------------------
+|              |              |
+Node App 1   Node App 2    Node App 3
+|              |              |
+--------------------------------
+         |
+       Redis
+         |
+    PostgreSQL
+
+---
+
+### Interview Answer (2–3 Lines)
+
+> Load balancing is the technique of distributing incoming requests across multiple Node.js application 
+instances to improve performance, scalability, and availability. It is typically implemented using tools 
+such as NGINX, HAProxy, or cloud load balancers, using algorithms like Round Robin or Least Connections.

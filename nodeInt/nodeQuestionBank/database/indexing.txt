@@ -1,0 +1,408 @@
+## What is Indexing in a Database?
+
+**Indexing** is a technique used to **speed up data retrieval** from a database.
+
+Without an index, the database may need to scan every row/document to find the required data.
+
+Think of it like a book:
+
+* **Without Index:** You read every page to find a topic.
+* **With Index:** You go directly to the page number from the index section.
+
+```text
+Book Search
+
+Without Index:
+Page 1 → Page 2 → Page 3 → ... → Page 500
+
+With Index:
+Topic "Java" → Page 320
+```
+
+---
+
+## Why Do We Need Indexing?
+
+Suppose a collection contains 10 million users:
+
+```json
+{
+  "_id": 1,
+  "email": "bilal@gmail.com",
+  "name": "Bilal"
+}
+```
+
+Query:
+
+```javascript
+db.users.find({
+   email: "bilal@gmail.com"
+})
+```
+
+### Without Index
+
+MongoDB performs a:
+
+```text
+COLLECTION SCAN (COLLSCAN)
+```
+
+It checks every document one by one.
+
+```text
+Doc1
+Doc2
+Doc3
+...
+Doc10000000
+```
+
+Time Complexity:
+
+```text
+O(n)
+```
+
+---
+
+### With Index
+
+```javascript
+db.users.createIndex({
+   email: 1
+})
+```
+
+Now MongoDB can directly locate the document.
+
+```text
+Index
+ ├── abc@gmail.com
+ ├── bilal@gmail.com
+ ├── john@gmail.com
+```
+
+Time Complexity approximately:
+
+```text
+O(log n)
+```
+
+Much faster for large datasets.
+
+---
+
+## Index in MongoDB
+
+Create an index:
+
+```javascript
+db.users.createIndex({
+    email: 1
+})
+```
+
+`1` means ascending order.
+
+```javascript
+db.users.createIndex({
+    age: -1
+})
+```
+
+`-1` means descending order.
+
+---
+
+## Index in Mongoose
+
+```javascript
+const userSchema = new mongoose.Schema({
+    email: {
+        type: String,
+        index: true
+    }
+});
+```
+
+Or:
+
+```javascript
+userSchema.index({
+    email: 1
+});
+```
+
+---
+
+## Types of Indexes
+
+### 1. Single Field Index
+
+```javascript
+db.users.createIndex({
+   email: 1
+});
+```
+
+Used when searching frequently by email.
+
+---
+
+### 2. Compound Index
+
+Multiple fields together.
+
+```javascript
+db.users.createIndex({
+    firstName: 1,
+    lastName: 1
+});
+```
+
+Useful for:
+
+```javascript
+db.users.find({
+    firstName: "Bilal",
+    lastName: "Ahmed"
+});
+```
+
+---
+
+### 3. Unique Index
+
+Prevents duplicate values.
+
+```javascript
+db.users.createIndex(
+   { email: 1 },
+   { unique: true }
+);
+```
+
+Now duplicate emails cannot be inserted.
+
+```javascript
+{
+   email: "bilal@gmail.com"
+}
+```
+
+If another document has the same email:
+
+```text
+Duplicate Key Error
+```
+
+---
+
+### 4. Text Index
+
+Used for searching text.
+
+```javascript
+db.posts.createIndex({
+   title: "text",
+   description: "text"
+});
+```
+
+Search:
+
+```javascript
+db.posts.find({
+   $text: {
+      $search: "mongodb"
+   }
+});
+```
+
+---
+
+### 5. TTL (Time To Live) Index
+
+Automatically removes documents after a specified time.
+
+```javascript
+db.sessions.createIndex(
+    { createdAt: 1 },
+    { expireAfterSeconds: 3600 }
+);
+```
+
+Documents expire after 1 hour.
+
+Common use cases:
+
+* OTPs
+* Sessions
+* Temporary tokens
+
+---
+
+### 6. Sparse Index
+
+Indexes only documents containing the field.
+
+```javascript
+db.users.createIndex(
+   { phone: 1 },
+   { sparse: true }
+);
+```
+
+---
+
+## How Index Works Internally
+
+Most databases use a data structure called a **B-Tree/B+ Tree**.
+
+```text
+              50
+          /        \
+        20          80
+      /   \       /   \
+    10    30    70    90
+```
+
+When searching for:
+
+```text
+70
+```
+
+Database doesn't scan all rows.
+
+It traverses the tree:
+
+```text
+50 → 80 → 70
+```
+
+This reduces lookup time dramatically.
+
+---
+
+## How to Check if an Index Is Being Used
+
+MongoDB:
+
+```javascript
+db.users.find({
+   email: "bilal@gmail.com"
+}).explain("executionStats")
+```
+
+Output:
+
+```text
+IXSCAN
+```
+
+means index is being used.
+
+```text
+COLLSCAN
+```
+
+means full collection scan.
+
+Interviewers often ask:
+
+> How do you verify whether a query is using an index?
+
+Answer:
+
+> Use `explain()` and check for `IXSCAN` in the execution plan.
+
+---
+
+## Drawbacks of Indexing
+
+Indexes are not free.
+
+### 1. Extra Storage
+
+```text
+Data
++
+Indexes
+=
+More Disk Space
+```
+
+---
+
+### 2. Slower Writes
+
+When inserting/updating:
+
+```javascript
+db.users.insertOne(...)
+```
+
+MongoDB must:
+
+1. Save document
+2. Update all indexes
+
+More indexes ⇒ slower writes.
+
+---
+
+### 3. Maintenance Cost
+
+Too many indexes can hurt performance.
+
+Example:
+
+```text
+10 indexes
+```
+
+Every insert/update must update all 10 indexes.
+
+---
+
+## Interview Question: When Should You Create an Index?
+
+Create indexes on:
+
+✅ Frequently searched fields
+
+```javascript
+email
+username
+phone
+```
+
+✅ Fields used in:
+
+* WHERE conditions
+* Sorting
+* Joins/Lookups
+* Filtering
+
+Avoid indexing:
+
+❌ Very small collections
+
+❌ Fields rarely queried
+
+❌ Too many fields
+
+---
+
+## Interview Answer (2-Minute Version)
+
+> Indexing is a database optimization technique used to improve query performance.
+ Instead of scanning every row or document, the database uses an index data structure, 
+ typically a B-Tree or B+ Tree, to quickly locate records. In MongoDB, indexes can be 
+ created using `createIndex()`. Common types include single-field, compound, unique, text, and TTL indexes. 
+ While indexes significantly speed up read operations, they consume extra storage and can slow down insert and 
+ update operations because the indexes must also be maintained. A query's index usage can be verified using `explain()`,
+  where `IXSCAN` indicates index usage and `COLLSCAN` indicates a full collection scan.

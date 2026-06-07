@@ -1,0 +1,351 @@
+## What is Idempotency?
+
+**Idempotency** means:
+
+> Performing the same operation multiple times produces the **same result as performing it once**.
+
+In REST APIs and Node.js applications, idempotency is important because network failures, retries, or duplicate 
+requests can occur.
+
+---
+
+## Simple Example
+
+Suppose a user updates their name:
+
+```http
+PUT /users/1
+
+{
+  "name": "Bilal"
+}
+```
+
+If this request is sent:
+
+* 1 time ✅
+* 5 times ✅
+* 100 times ✅
+
+The final state remains:
+
+```json
+{
+  "id": 1,
+  "name": "Bilal"
+}
+```
+
+This operation is **idempotent**.
+
+---
+
+# HTTP Methods and Idempotency
+
+| Method | Idempotent? | Reason                            |
+| ------ | ----------- | --------------------------------- |
+| GET    | ✅ Yes       | Only reads data                   |
+| PUT    | ✅ Yes       | Replaces resource with same state |
+| DELETE | ✅ Yes       | Resource remains deleted          |
+| PATCH  | ⚠️ Usually  | Depends on implementation         |
+| POST   | ❌ No        | Creates new resources             |
+
+---
+
+## GET Example
+
+```http
+GET /users/1
+```
+
+Calling it 100 times doesn't change anything.
+
+✅ Idempotent
+
+---
+
+## PUT Example
+
+Existing user:
+
+```json
+{
+  "name": "Ahmed"
+}
+```
+
+Request:
+
+```http
+PUT /users/1
+
+{
+  "name": "Bilal"
+}
+```
+
+After 1 call:
+
+```json
+{
+  "name": "Bilal"
+}
+```
+
+After 10 calls:
+
+```json
+{
+  "name": "Bilal"
+}
+```
+
+✅ Idempotent
+
+---
+
+## DELETE Example
+
+```http
+DELETE /users/1
+```
+
+First request:
+
+```text
+User deleted
+```
+
+Second request:
+
+```text
+User already doesn't exist
+```
+
+The final state is still:
+
+```text
+User absent
+```
+
+✅ Idempotent
+
+---
+
+## POST Example
+
+```http
+POST /orders
+
+{
+  "productId": 101
+}
+```
+
+Request 1:
+
+```text
+Order #1001 created
+```
+
+Request 2:
+
+```text
+Order #1002 created
+```
+
+Request 3:
+
+```text
+Order #1003 created
+```
+
+Multiple requests create multiple resources.
+
+❌ Not idempotent
+
+---
+
+# Why Idempotency Matters
+
+Imagine a payment API.
+
+```text
+Client
+   ↓
+POST /payments
+   ↓
+Payment Processed
+```
+
+Network timeout occurs.
+
+Client doesn't know whether payment succeeded and retries.
+
+Without idempotency:
+
+```text
+Payment #1 = ₹1000
+Retry
+Payment #2 = ₹1000
+```
+
+Customer charged twice.
+
+---
+
+# Idempotency Key
+
+A common solution is using an **Idempotency-Key** header.
+
+### Request
+
+```http
+POST /payments
+Idempotency-Key: abc123
+
+{
+  "amount": 1000
+}
+```
+
+Server stores:
+
+```text
+abc123 → Payment Success
+```
+
+---
+
+### Retry Request
+
+```http
+POST /payments
+Idempotency-Key: abc123
+
+{
+  "amount": 1000
+}
+```
+
+Instead of creating a new payment:
+
+```text
+Return previous response
+```
+
+No duplicate payment.
+
+---
+
+# Implementing Idempotency in Node.js
+
+Simple in-memory example:
+
+```javascript
+const processedRequests = new Map();
+
+app.post('/payments', (req, res) => {
+
+    const key = req.headers['idempotency-key'];
+
+    if (processedRequests.has(key)) {
+        return res.json(
+            processedRequests.get(key)
+        );
+    }
+
+    const response = {
+        paymentId: Date.now(),
+        status: 'SUCCESS'
+    };
+
+    processedRequests.set(key, response);
+
+    res.json(response);
+});
+```
+
+---
+
+## Production Implementation
+
+Don't store keys in memory.
+
+Use:
+
+* Redis
+* Database table
+* Distributed cache
+
+Example table:
+
+| Idempotency Key | Response        |
+| --------------- | --------------- |
+| abc123          | Payment Success |
+| xyz789          | Order Created   |
+
+---
+
+# PATCH and Idempotency
+
+### Idempotent PATCH
+
+```http
+PATCH /users/1
+
+{
+  "status": "ACTIVE"
+}
+```
+
+Repeated calls produce same result.
+
+✅ Idempotent
+
+---
+
+### Non-Idempotent PATCH
+
+```http
+PATCH /users/1
+
+{
+  "incrementBalance": 100
+}
+```
+
+Each request changes state.
+
+```text
+1000
+1100
+1200
+1300
+```
+
+❌ Not idempotent
+
+That's why PATCH is often considered "depends on implementation."
+
+---
+
+# Real-World Use Cases
+
+* Payment APIs
+* Order creation
+* Refund processing
+* Inventory updates
+* Bank transactions
+* Message processing in queues
+
+For example, payment providers like Stripe support idempotency keys to prevent duplicate charges.
+
+---
+
+# Interview Answer
+
+> Idempotency means that making the same request multiple times results in the same final state as making it once.
+ In REST APIs, GET, PUT, and DELETE are idempotent, while POST is generally not. Idempotency is important for handling 
+ retries safely, especially in payment and order-processing systems. In Node.js, idempotency is commonly implemented 
+ using an Idempotency-Key stored in Redis or a database to detect and prevent duplicate operations.

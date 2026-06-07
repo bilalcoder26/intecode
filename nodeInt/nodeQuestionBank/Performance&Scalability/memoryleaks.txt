@@ -1,0 +1,383 @@
+How to handle memory leaks
+
+A **memory leak** occurs when memory that is no longer needed is not released, causing the application's memory 
+usage to continuously grow over time.
+
+In Node.js, memory leaks can eventually lead to:
+
+* High memory consumption
+* Slow performance
+* Frequent garbage collection pauses
+* Crashes with **"JavaScript heap out of memory"**
+
+---
+
+# Common Causes of Memory Leaks
+
+## 1. Global Variables
+
+### Bad
+
+const cache = {};
+
+app.get('/users/:id', async (req, res) => {
+    cache[req.params.id] = await getUser(req.params.id);
+});
+
+If new users keep arriving:
+
+cache
+├── user1
+├── user2
+├── user3
+...
+├── user1000000
+
+Memory keeps growing.
+
+### Better
+
+Use a cache with expiration:
+
+const NodeCache = require('node-cache');
+
+const cache = new NodeCache({
+    stdTTL: 60
+});
+
+---
+
+## 2. Unclosed Database Connections
+
+### Bad
+
+app.get('/users', async (req, res) => {
+    const connection = await db.connect();
+
+    const users = await connection.query(...);
+
+    res.send(users);
+});
+
+Connections may never be released.
+
+### Good
+
+const connection = await db.connect();
+
+try {
+    const users = await connection.query(...);
+    res.send(users);
+} finally {
+    connection.release();
+}
+
+Or use connection pooling.
+
+---
+
+## 3. Event Listener Leaks
+
+### Bad
+
+app.get('/test', (req, res) => {
+    process.on('message', () => {
+        console.log('message');
+    });
+});
+
+Every request adds a new listener.
+
+Request 1 -> Listener 1
+Request 2 -> Listener 2
+Request 3 -> Listener 3
+
+Memory usage grows.
+
+### Good
+
+process.once('message', handler);
+
+or
+
+process.removeListener('message', handler);
+
+---
+
+## 4. Uncleared Timers
+
+### Bad
+
+setInterval(() => {
+    console.log('running');
+}, 1000);
+
+Intervals continue forever.
+
+### Good
+
+const timer = setInterval(() => {
+    console.log('running');
+}, 1000);
+
+clearInterval(timer);
+
+---
+
+## 5. Large Closures
+
+### Bad
+
+function createUserHandler() {
+    const hugeArray = new Array(1000000);
+
+    return function () {
+        console.log('request');
+    };
+}
+
+The closure keeps `hugeArray` alive.
+
+### Better
+
+Avoid capturing unnecessary large objects.
+
+---
+
+## 6. In-Memory Caches Without Limits
+
+### Bad
+
+const cache = new Map();
+
+cache.set(userId, userData);
+
+Memory grows forever.
+
+### Better
+
+Use:
+
+* Redis
+* LRU cache
+
+Example:
+
+const LRU = require('lru-cache');
+
+const cache = new LRU({
+    max: 1000
+});
+
+---
+
+## 7. Holding Large Objects
+
+### Bad
+
+const requests = [];
+
+app.use((req, res, next) => {
+    requests.push(req);
+    next();
+});
+
+Request objects remain in memory.
+
+### Better
+
+Store only required information.
+
+requests.push(req.id);
+
+---
+
+# How to Detect Memory Leaks
+
+## Monitor Memory Usage
+
+setInterval(() => {
+    console.log(process.memoryUsage());
+}, 5000);
+
+Output:
+
+{
+  rss: 55000000,
+  heapTotal: 25000000,
+  heapUsed: 18000000
+}
+
+Important metrics:
+
+| Metric    | Meaning            |
+| --------- | ------------------ |
+| rss       | Total memory used  |
+| heapTotal | Allocated V8 heap  |
+| heapUsed  | Actually used heap |
+| external  | External memory    |
+
+---
+
+## Generate Heap Snapshots
+
+Node.js supports heap snapshots.
+
+Start application:
+
+node --inspect app.js
+
+Open:
+
+Chrome
+|
+chrome://inspect
+|
+Memory Tab
+
+Take snapshots and compare them over time.
+
+If objects keep increasing after requests complete, you likely have a leak.
+
+---
+
+# Useful Tools
+
+## 1. Chrome DevTools
+
+Built into Node inspection.
+
+node --inspect app.js
+
+Features:
+
+* Heap snapshots
+* Allocation profiling
+* Memory comparison
+
+---
+
+## 2. [Clinic.js](https://clinicjs.org/?utm_source=chatgpt.com)
+
+npm install -g clinic
+
+clinic doctor -- node app.js
+
+Shows:
+
+* CPU bottlenecks
+* Event loop lag
+* Memory issues
+
+---
+
+## 3. Heapdump
+
+npm install heapdump
+
+require('heapdump');
+
+process.on('SIGUSR2', () => {
+    heapdump.writeSnapshot();
+});
+
+Creates a heap dump for analysis.
+
+---
+
+## 4. PM2 Monitoring
+
+Using [PM2](https://pm2.io?utm_source=chatgpt.com):
+
+pm2 monit
+
+Track:
+
+* Memory usage
+* CPU usage
+* Restarts
+
+---
+
+# Garbage Collection (GC)
+
+Node.js uses the V8 engine's garbage collector.
+
+Allocated Object
+      |
+No References
+      |
+Garbage Collector
+      |
+Memory Freed
+
+A memory leak happens when references are unintentionally retained, preventing garbage collection.
+
+Example:
+
+let user = {
+    name: 'John'
+};
+
+user = null;
+
+Now the object can be garbage collected.
+
+---
+
+# Production Best Practices
+
+### Use Redis for Shared Cache
+
+Node.js
+   |
+ Redis
+
+instead of storing everything in process memory.
+
+---
+
+### Limit Cache Size
+
+max: 1000
+ttl: 60
+
+---
+
+### Remove Unused Listeners
+
+removeListener()
+off()
+once()
+
+---
+
+### Use Streams for Large Files
+
+❌
+
+fs.readFileSync('5gb.zip');
+
+✅
+
+fs.createReadStream('5gb.zip');
+
+---
+
+### Monitor Memory Continuously
+
+Track:
+
+* Heap growth
+* GC frequency
+* Process restarts
+
+---
+
+# Interview Answer
+
+> Memory leaks in Node.js occur when objects that are no longer needed remain referenced and cannot be garbage collected. 
+Common causes include global variables, unbounded caches, event listener leaks, uncleared timers, and retained closures. 
+To identify leaks, I monitor `process.memoryUsage()`, analyze heap snapshots using Chrome DevTools, and use tools like 
+Clinic.js and heap dumps. To prevent leaks, I use Redis for caching, remove unused listeners, clear timers, 
+use connection pools, and avoid retaining large objects unnecessarily.

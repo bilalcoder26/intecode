@@ -1,0 +1,541 @@
+Microservices architecture in Node.js
+# Microservices Architecture in Node.js
+
+A **Microservices Architecture** is a design pattern where an application is split into multiple small, independent services. Each service is responsible for a specific business capability and can be developed, deployed, and scaled independently.
+
+---
+
+# Monolithic vs Microservices
+
+## Monolithic Architecture
+
+Everything runs in a single application.
+
+```text
+E-Commerce App
+|
+|-- User Module
+|-- Product Module
+|-- Order Module
+|-- Payment Module
+|
+Single Database
+```
+
+### Problems
+
+* Large codebase
+* Difficult deployments
+* Hard to scale specific modules
+* One bug can impact the whole application
+
+---
+
+## Microservices Architecture
+
+Each module becomes a separate service.
+
+```text
+                API Gateway
+                      |
+------------------------------------------------
+|              |             |                 |
+v              v             v                 v
+User       Product       Order          Payment
+Service    Service       Service        Service
+```
+
+Each service:
+
+* Has its own codebase
+* Has its own deployment pipeline
+* Can be scaled independently
+* Can have its own database
+
+---
+
+# Example: E-Commerce System
+
+Instead of one large application:
+
+```text
+E-Commerce App
+```
+
+We create:
+
+```text
+User Service
+Product Service
+Order Service
+Payment Service
+Notification Service
+```
+
+Each service focuses on one responsibility.
+
+---
+
+# Typical Node.js Microservices Architecture
+
+```text
+                    Client
+                       |
+                       v
+                 API Gateway
+                       |
+---------------------------------------------------
+|                |                 |              |
+v                v                 v              v
+User          Product          Order         Payment
+Service       Service          Service       Service
+                       |
+                       v
+                    Kafka
+                       |
+                 Notification
+                    Service
+```
+
+---
+
+# Components
+
+## 1. API Gateway
+
+Acts as a single entry point.
+
+Responsibilities:
+
+* Authentication
+* Authorization
+* Routing
+* Rate limiting
+* Logging
+
+```text
+Client
+   |
+   v
+API Gateway
+   |
+   +--> User Service
+   +--> Order Service
+   +--> Product Service
+```
+
+Popular choices:
+
+* NGINX
+* Kong
+* Express Gateway
+
+---
+
+## 2. Independent Services
+
+Example:
+
+### User Service
+
+```text
+/user/register
+/user/login
+/user/profile
+```
+
+### Product Service
+
+```text
+/products
+/products/:id
+```
+
+### Order Service
+
+```text
+/orders
+/orders/:id
+```
+
+Each service can be built using Express.js, NestJS, or Fastify.
+
+---
+
+## 3. Database per Service
+
+Recommended pattern:
+
+```text
+User Service
+     |
+     v
+ User DB
+
+Product Service
+     |
+     v
+ Product DB
+
+Order Service
+     |
+     v
+ Order DB
+```
+
+Benefits:
+
+* Loose coupling
+* Independent scaling
+* Independent schema changes
+
+Avoid:
+
+```text
+User Service
+Product Service
+Order Service
+       |
+       v
+ Shared Database
+```
+
+This creates tight coupling.
+
+---
+
+# Communication Between Services
+
+There are two main approaches.
+
+---
+
+## 1. Synchronous Communication
+
+Uses HTTP or gRPC.
+
+```text
+Order Service
+      |
+HTTP Call
+      |
+      v
+Product Service
+```
+
+Example:
+
+```js
+const response = await axios.get(
+  "http://product-service/products/1"
+);
+```
+
+### Advantages
+
+* Simple
+* Easy to understand
+
+### Disadvantages
+
+* Tight coupling
+* Service dependency
+* Higher latency
+
+---
+
+## 2. Asynchronous Communication
+
+Uses RabbitMQ or Kafka.
+
+```text
+Order Service
+      |
+      v
+Kafka
+      |
+-------------------
+|                 |
+v                 v
+Inventory     Notification
+Service        Service
+```
+
+Example event:
+
+```json
+{
+  "event": "ORDER_CREATED",
+  "orderId": 123
+}
+```
+
+Consumers react independently.
+
+---
+
+# Service Discovery
+
+In large systems, service locations change.
+
+Instead of:
+
+```text
+http://192.168.1.10:3000
+```
+
+Use service discovery.
+
+```text
+Order Service
+      |
+      v
+Service Registry
+      |
+      v
+Product Service
+```
+
+Popular tools:
+
+* Consul
+* Eureka
+* Kubernetes Service Discovery
+
+---
+
+# Authentication in Microservices
+
+Common approach:
+
+### JWT Authentication
+
+```text
+Client
+   |
+Login
+   |
+   v
+Auth Service
+   |
+Returns JWT
+```
+
+Every request contains:
+
+```text
+Authorization: Bearer JWT
+```
+
+Other services verify the token.
+
+---
+
+# Event-Driven Microservices
+
+Very common in modern systems.
+
+### Order Placement Flow
+
+```text
+User Places Order
+        |
+        v
+Order Service
+        |
+        v
+Kafka Event
+        |
+---------------------------------
+|               |               |
+v               v               v
+Payment      Inventory     Notification
+Service      Service       Service
+```
+
+Benefits:
+
+* Loose coupling
+* Better scalability
+* Easier maintenance
+
+---
+
+# Advantages of Microservices
+
+### Independent Deployment
+
+Deploy Order Service without redeploying User Service.
+
+---
+
+### Independent Scaling
+
+If orders increase:
+
+```text
+Order Service x 10 instances
+
+User Service x 2 instances
+```
+
+Scale only what needs scaling.
+
+---
+
+### Fault Isolation
+
+If Notification Service crashes:
+
+```text
+Notification Service ❌
+```
+
+User and Order services still work.
+
+---
+
+### Technology Flexibility
+
+Different services can use different technologies.
+
+```text
+User Service      -> Node.js
+Analytics Service -> Python
+Payment Service   -> Java
+```
+
+---
+
+# Challenges of Microservices
+
+### Distributed System Complexity
+
+Harder than monoliths.
+
+---
+
+### Network Latency
+
+Every service call travels over the network.
+
+---
+
+### Data Consistency
+
+Transactions across services are difficult.
+
+Example:
+
+```text
+Order Service
+Payment Service
+Inventory Service
+```
+
+Traditional database transactions won't work across all services.
+
+Solutions:
+
+* Saga Pattern
+* Eventual Consistency
+
+---
+
+### Monitoring
+
+Need centralized logging and monitoring.
+
+Tools:
+
+* ELK Stack
+* Prometheus
+* Grafana
+
+---
+
+# Microservices Design Patterns
+
+## API Gateway Pattern
+
+```text
+Client
+  |
+API Gateway
+  |
+Services
+```
+
+---
+
+## Circuit Breaker Pattern
+
+Protects against cascading failures.
+
+```text
+Order Service
+      |
+      X
+Payment Service Down
+```
+
+Circuit breaker stops repeated failed calls.
+
+---
+
+## Saga Pattern
+
+Manages distributed transactions.
+
+```text
+Order Created
+      |
+Payment Success
+      |
+Inventory Updated
+      |
+Notification Sent
+```
+
+If one step fails, compensating actions are triggered.
+
+---
+
+## Event Sourcing
+
+Store events instead of current state.
+
+```text
+Account Created
+Money Deposited
+Money Withdrawn
+```
+
+Current state is reconstructed from events.
+
+---
+
+# Node.js Microservices Tech Stack (Common Interview Answer)
+
+```text
+API Gateway      -> NGINX / Kong
+Backend          -> Express.js / NestJS
+Database         -> PostgreSQL / MongoDB
+Cache            -> Redis
+Messaging        -> RabbitMQ / Kafka
+Authentication   -> JWT
+Containerization -> Docker
+Orchestration    -> Kubernetes
+Monitoring       -> Prometheus + Grafana
+Logging          -> ELK Stack
+```
+
+# Interview Answer (2-Minute Version)
+
+**Microservices architecture** is an architectural style where an application is divided into small,
+ independently deployable services, each responsible for a single business capability. Services communicate 
+ through HTTP/gRPC or messaging systems like RabbitMQ and Kafka. Benefits include independent deployment, 
+ scalability, fault isolation, and technology flexibility. Challenges include distributed system complexity, 
+ network latency, service discovery, monitoring, and data consistency. In Node.js, microservices are commonly 
+ built using Express.js or NestJS, with Redis for caching, Kafka/RabbitMQ for communication, Docker for containerization, 
+ and Kubernetes for orchestration.

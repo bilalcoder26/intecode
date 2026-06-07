@@ -1,0 +1,114 @@
+What is the difference between process.nextTick() and setImmediate()?
+
+Both `process.nextTick()` and `setImmediate()` are used in **Node.js** to schedule asynchronous 
+callbacks—but they run at **different points in the event loop**, which leads to important behavioral differences.
+
+---
+
+## 🧠 Core difference (quick intuition)
+
+* **`process.nextTick()`** → runs **immediately after the current operation**, *before* the event loop continues
+* **`setImmediate()`** → runs on the **next iteration of the event loop**, after I/O events
+
+---
+
+## 🔄 Where they run in the event loop
+
+### `process.nextTick()`
+
+* Executes in the **microtask queue**
+* Runs **before** the event loop proceeds to the next phase
+* Has **higher priority** than `setImmediate()`
+
+process.nextTick(() => {
+  console.log("nextTick");
+});
+
+console.log("main");
+
+**Output:**
+
+main
+nextTick
+
+---
+
+### `setImmediate()`
+
+* Executes in the **check phase** of the event loop
+* Runs **after I/O callbacks** (if any)
+* Lower priority than `process.nextTick()`
+
+setImmediate(() => {
+  console.log("setImmediate");
+});
+
+console.log("main");
+
+**Output:**
+
+main
+setImmediate
+```
+
+---
+
+## ⚖️ Key differences
+
+| Feature          | `process.nextTick()`                      | `setImmediate()`              |
+| ---------------- | ----------------------------------------- | ----------------------------- |
+| Queue            | Microtask queue                           | Check phase queue             |
+| Execution timing | **Immediately after current function**    | **Next event loop iteration** |
+| Priority         | Higher                                    | Lower                         |
+| Starvation risk  | ⚠️ Yes (can block event loop if overused) | ❌ No (yields to event loop)   |
+
+---
+
+## ⚠️ Important caveat
+
+If you recursively call `process.nextTick()`, you can **block the event loop**:
+
+function loop() {
+  process.nextTick(loop);
+}
+loop();
+
+This prevents I/O and timers from running.
+
+`setImmediate()` avoids this problem because it **lets the event loop breathe** between executions.
+
+---
+
+## 🧪 Subtle behavior with I/O
+
+Inside an I/O callback, `setImmediate()` usually runs **before** `setTimeout(..., 0)`:
+
+const fs = require('fs');
+
+fs.readFile(__filename, () => {
+  setTimeout(() => console.log('timeout'), 0);
+  setImmediate(() => console.log('immediate'));
+});
+
+**Typical output:**
+
+immediate
+timeout
+
+---
+
+## ✅ When to use which
+
+* Use **`process.nextTick()`**
+
+  * For small, immediate follow-up operations
+  * When you need to run something **before any I/O**
+
+* Use **`setImmediate()`**
+
+  * For deferring work to the next loop iteration
+  * To **avoid blocking the event loop**
+
+---
+
+If you want, I can show a visual diagram of the Node.js event loop phases to make this even clearer.

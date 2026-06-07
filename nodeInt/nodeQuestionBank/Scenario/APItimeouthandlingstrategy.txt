@@ -1,0 +1,383 @@
+API timeout handling strategy?
+Handling API timeouts is critical in distributed systems because a slow downstream service can cause your entire application to become unresponsive.
+
+---
+
+# Why Timeouts Matter
+
+Without a timeout:
+
+```text
+Client
+  |
+  v
+API Server
+  |
+  v
+Payment Service (Hangs Forever)
+```
+
+Your Node.js server keeps waiting:
+
+* Request threads/resources remain occupied
+* Memory usage increases
+* Throughput decreases
+* Can lead to cascading failures
+
+---
+
+# 1. Set Explicit Timeouts
+
+Never rely on default timeout values.
+
+### Using Axios
+
+```javascript
+const axios = require("axios");
+
+const response = await axios.get(
+  "https://payment-service/api/pay",
+  {
+    timeout: 5000
+  }
+);
+```
+
+Meaning:
+
+```text
+Wait max 5 seconds
+```
+
+After that:
+
+```javascript
+catch(error) {
+    if(error.code === "ECONNABORTED"){
+        console.log("Request timed out");
+    }
+}
+```
+
+---
+
+# 2. Different Timeouts for Different APIs
+
+Not every API should have the same timeout.
+
+| Service           | Timeout    |
+| ----------------- | ---------- |
+| Cache/Redis       | 100-500 ms |
+| Internal API      | 1-3 sec    |
+| Payment Gateway   | 5-10 sec   |
+| Report Generation | 20-30 sec  |
+
+Example:
+
+```text
+User Profile API
+→ 2 sec timeout
+
+Payment API
+→ 8 sec timeout
+```
+
+---
+
+# 3. Retry Strategy
+
+Sometimes timeout occurs because of temporary network issues.
+
+### Retry with Exponential Backoff
+
+Instead of:
+
+```text
+Retry immediately
+Retry immediately
+Retry immediately
+```
+
+Use:
+
+```text
+1st Retry -> 1 sec
+2nd Retry -> 2 sec
+3rd Retry -> 4 sec
+```
+
+Example:
+
+```javascript
+async function retry(fn, retries = 3) {
+    let delay = 1000;
+
+    for(let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch(err) {
+            if(i === retries - 1) throw err;
+
+            await new Promise(resolve =>
+                setTimeout(resolve, delay)
+            );
+
+            delay *= 2;
+        }
+    }
+}
+```
+
+---
+
+# 4. Circuit Breaker Pattern
+
+Suppose payment service is down.
+
+Without Circuit Breaker:
+
+```text
+10000 requests
+       |
+       v
+Payment Service
+       |
+     FAIL
+```
+
+Server keeps making useless requests.
+
+---
+
+With Circuit Breaker:
+
+```text
+Failure Threshold Reached
+          |
+          v
+Circuit Opens
+          |
+Stop Calling Service
+```
+
+States:
+
+```text
+Closed
+  |
+Open
+  |
+Half Open
+```
+
+Benefits:
+
+* Protects system resources
+* Faster failure response
+* Prevents cascading failures
+
+Node.js library:
+
+```text
+Opossum
+```
+
+---
+
+# 5. Graceful Fallbacks
+
+If service times out, return fallback data.
+
+Example:
+
+```text
+Product Page
+```
+
+Recommendation API times out.
+
+Instead of:
+
+```text
+500 Error
+```
+
+Return:
+
+```text
+Product Details
+Recommendations unavailable
+```
+
+Example:
+
+```javascript
+try {
+    return await recommendationService();
+} catch {
+    return [];
+}
+```
+
+---
+
+# 6. Queue Long Running Operations
+
+Bad:
+
+```text
+Request
+ |
+Generate PDF
+ |
+Send Email
+ |
+Return Response
+```
+
+Could take 30 seconds.
+
+---
+
+Better:
+
+```text
+Request
+ |
+Create Job
+ |
+Return Job ID
+ |
+Queue
+ |
+Worker Processes
+```
+
+Response:
+
+```json
+{
+  "jobId": "123",
+  "status": "processing"
+}
+```
+
+---
+
+# 7. Client-Side Timeout Handling
+
+Clients should also implement timeouts.
+
+Example:
+
+```text
+Client Timeout = 10 sec
+Server Timeout = 8 sec
+```
+
+Server fails first and returns a proper response.
+
+Avoid:
+
+```text
+Client Timeout = 5 sec
+Server Timeout = 30 sec
+```
+
+because the client gives up while the server continues processing.
+
+---
+
+# 8. Idempotency for Retries
+
+Suppose payment request times out:
+
+```text
+Client
+  |
+Pay ₹1000
+  |
+Timeout
+```
+
+Client retries.
+
+Without idempotency:
+
+```text
+₹1000 charged twice
+```
+
+Use an idempotency key:
+
+```http
+Idempotency-Key: abc123
+```
+
+Server processes it only once.
+
+This is extremely important for:
+
+* Payments
+* Order creation
+* Booking systems
+
+---
+
+# 9. Monitoring Timeouts
+
+Track:
+
+* Timeout count
+* Average response time
+* P95 latency
+* P99 latency
+
+Example:
+
+```text
+Average: 200ms
+P95: 800ms
+P99: 5s
+```
+
+P99 often reveals hidden bottlenecks.
+
+Common tools:
+
+* [Prometheus](https://prometheus.io?utm_source=chatgpt.com)
+* [Grafana](https://grafana.com?utm_source=chatgpt.com)
+* [Datadog](https://www.datadoghq.com?utm_source=chatgpt.com)
+
+---
+
+# 10. Timeout Hierarchy
+
+A common production setup:
+
+```text
+Client Timeout       = 10 sec
+API Gateway Timeout  = 9 sec
+Service Timeout      = 8 sec
+DB Timeout           = 5 sec
+```
+
+Rule:
+
+```text
+Inner layers should timeout first.
+```
+
+This prevents resources from being held unnecessarily.
+
+---
+
+# Interview Answer (1 Minute)
+
+> To handle API timeouts, I always set explicit timeouts on outbound requests and choose timeout values based 
+on the downstream service's SLA. For transient failures, I implement retries with exponential backoff, but only 
+for safe and idempotent operations. To prevent cascading failures, I use the Circuit Breaker pattern. 
+For non-critical features, I provide graceful fallbacks, and for long-running tasks I move processing 
+to asynchronous queues like RabbitMQ or Kafka. I also use idempotency keys for operations such as payments 
+to avoid duplicate processing during retries. Finally, I monitor timeout rates and latency metrics (P95/P99) 
+to detect and resolve bottlenecks proactively.

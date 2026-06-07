@@ -1,0 +1,367 @@
+Rate limiting and throttling
+# Rate Limiting vs Throttling
+
+Both are used to **control API traffic** and protect applications from abuse, but they work differently.
+
+| Feature  | Rate Limiting                         | Throttling                        |
+| -------- | ------------------------------------- | --------------------------------- |
+| Purpose  | Limit total requests in a time window | Slow down request rate            |
+| Action   | Reject extra requests                 | Delay or restrict request speed   |
+| Response | Usually `429 Too Many Requests`       | Requests may be queued or delayed |
+| Example  | Max 100 requests/minute               | Max 10 requests/second            |
+| Use Case | Prevent abuse, DDoS, brute force      | Prevent sudden traffic spikes     |
+
+---
+
+# 1. Rate Limiting
+
+Rate limiting defines:
+
+> "How many requests can a client make within a specific time period?"
+
+### Example
+
+```text
+100 requests / 15 minutes
+```
+
+User makes:
+
+```text
+Request 1  ✅
+Request 2  ✅
+...
+Request 100 ✅
+Request 101 ❌
+```
+
+Server returns:
+
+```http
+429 Too Many Requests
+```
+
+---
+
+## Why Use Rate Limiting?
+
+Protect against:
+
+* Brute-force login attacks
+* API abuse
+* DDoS attacks
+* Excessive scraping
+
+Example:
+
+```text
+Login API
+
+Allow:
+5 attempts per minute
+```
+
+Attacker:
+
+```text
+Password1
+Password2
+Password3
+Password4
+Password5
+Password6 ❌
+```
+
+Blocked after 5 attempts.
+
+---
+
+## Rate Limiting in Node.js
+
+Install:
+
+```bash
+npm install express-rate-limit
+```
+
+Example:
+
+```javascript
+const rateLimit = require("express-rate-limit");
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+
+app.use(limiter);
+```
+
+Meaning:
+
+```text
+100 requests
+per
+15 minutes
+per IP
+```
+
+---
+
+## Custom Login Limiter
+
+```javascript
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5
+});
+
+app.use("/login", loginLimiter);
+```
+
+Only:
+
+```text
+5 login attempts/minute
+```
+
+---
+
+# 2. Throttling
+
+Throttling controls:
+
+> "How quickly requests can be processed."
+
+Instead of rejecting immediately, it may delay requests.
+
+---
+
+### Example
+
+Limit:
+
+```text
+10 requests/second
+```
+
+User sends:
+
+```text
+50 requests instantly
+```
+
+Server:
+
+```text
+10 processed now
+10 processed later
+10 processed later
+...
+```
+
+Requests are slowed down.
+
+---
+
+## Real-World Example
+
+Imagine a highway toll booth.
+
+### Rate Limiting
+
+```text
+Only 100 cars allowed today.
+Car 101 → Rejected.
+```
+
+### Throttling
+
+```text
+All cars allowed,
+but only 10 cars/minute can pass.
+```
+
+---
+
+# API Gateway Example
+
+Many API gateways throttle traffic:
+
+```text
+Amazon API Gateway
+NGINX
+Kong
+Spring Cloud Gateway
+```
+
+Example:
+
+```text
+Burst: 100 requests
+
+Sustained:
+20 requests/sec
+```
+
+If traffic exceeds:
+
+```text
+Requests delayed or rejected
+```
+
+---
+
+# Common Algorithms Used
+
+## Fixed Window
+
+```text
+100 requests/minute
+```
+
+Counter resets every minute.
+
+```text
+0-60 sec → 100 requests
+61 sec → Counter reset
+```
+
+Simple but can allow bursts.
+
+---
+
+## Sliding Window
+
+Tracks requests continuously.
+
+```text
+Last 60 seconds
+```
+
+More accurate.
+
+```text
+10:00:30 → count requests from
+9:59:30 to 10:00:30
+```
+
+---
+
+## Token Bucket (Popular)
+
+Bucket contains tokens.
+
+```text
+Capacity = 10 tokens
+```
+
+Each request consumes one token.
+
+```text
+Request → Token removed
+```
+
+Tokens refill over time.
+
+```text
+1 token/sec
+```
+
+When bucket empty:
+
+```text
+Request rejected/delayed
+```
+
+Used by:
+
+* AWS
+* Google Cloud
+* API Gateways
+
+---
+
+## Leaky Bucket
+
+Requests enter a queue.
+
+```text
+Incoming:
+50 req/sec
+
+Outgoing:
+10 req/sec
+```
+
+Excess traffic is smoothed out.
+
+Useful for throttling.
+
+---
+
+# HTTP Status Code
+
+When limits are exceeded:
+
+```http
+429 Too Many Requests
+```
+
+Often includes:
+
+```http
+Retry-After: 60
+```
+
+Meaning:
+
+```text
+Try again after 60 seconds
+```
+
+---
+
+# Typical Production Setup
+
+### Login APIs
+
+```text
+5 requests/minute
+```
+
+Prevents brute-force attacks.
+
+### OTP APIs
+
+```text
+3 requests/5 minutes
+```
+
+Prevents SMS spam.
+
+### Public APIs
+
+1000 requests/hour
+
+Prevents abuse.
+
+### Internal APIs
+
+Token Bucket
+100 req/sec
+
+Handles bursts safely.
+
+---
+
+# Interview Answer
+
+> **Rate limiting** restricts the total number of requests a client can make within a time window, 
+for example 100 requests per minute. When the limit is exceeded, the server typically responds with 
+**HTTP 429 Too Many Requests**. It is mainly used to prevent abuse, brute-force attacks, and DDoS attempts.
+>
+> **Throttling** controls the speed at which requests are processed, such as allowing only 10 requests per second. 
+Instead of simply counting requests, it smooths traffic and prevents sudden spikes from overwhelming the system. 
+Common algorithms include Token Bucket and Leaky Bucket. In production systems, 
+rate limiting and throttling are often used together.

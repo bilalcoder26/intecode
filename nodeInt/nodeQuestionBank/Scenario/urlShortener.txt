@@ -1,0 +1,431 @@
+How would you design a URL shortener in Node.js?
+
+
+1. Requirements
+2. Database Design
+3. Short URL Generation
+4. API Design
+5. Scalability
+6. Caching
+7. Analytics
+
+---
+
+# 1. Functional Requirements
+
+### User should be able to:
+
+* Submit a long URL
+* Get a short URL
+* Redirect using short URL
+* Optional:
+
+  * Custom aliases
+  * Expiration time
+  * Analytics (click count)
+
+### Example
+
+Long URL:
+https://www.example.com/blogs/nodejs-system-design
+
+Short URL:
+https://tiny.ly/aB3xYz
+
+---
+
+# 2. High-Level Architecture
+
+Client
+   |
+   v
+Load Balancer
+   |
+   v
+Node.js API Servers
+   |
+   +------ Redis Cache
+   |
+   +------ Database (MongoDB/PostgreSQL)
+
+Flow:
+
+Create URL
+Client -> API -> DB -> Return Short URL
+
+Redirect
+Client -> API -> Redis
+                |
+                | Miss
+                v
+                DB
+                |
+                v
+          Original URL
+
+---
+
+# 3. Database Design
+
+### MongoDB Schema
+
+{
+    _id: ObjectId,
+    shortCode: "aB3xYz",
+    longUrl: "https://example.com/blog",
+    createdAt: Date,
+    expiresAt: Date,
+    clicks: 0
+}
+
+### Indexes
+
+db.urls.createIndex({ shortCode: 1 }, { unique: true })
+
+db.urls.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+
+The first index makes lookups fast.
+
+The second automatically removes expired URLs.
+
+---
+
+# 4. API Design
+
+## Create Short URL
+
+POST /api/shorten
+
+Request:
+
+{
+  "url": "https://example.com/blog"
+}
+
+Response:
+
+{
+  "shortUrl": "https://tiny.ly/aB3xYz"
+}
+
+---
+
+## Redirect
+
+GET /aB3xYz
+
+Response:
+
+302 Redirect
+Location: https://example.com/blog
+
+---
+
+## Analytics
+
+GET /api/analytics/aB3xYz
+
+Response:
+
+{
+  "clicks": 1542
+}
+
+---
+
+# 5. Generating Unique Short Codes
+
+This is the most important part.
+
+---
+
+## Approach 1: Random String
+
+Generate:
+
+const shortCode = nanoid(6);
+
+Examples:
+
+aB3xYz
+K2LmP9
+
+### Pros
+
+* Easy
+* Fast
+
+### Cons
+
+* Collision possible
+
+Need uniqueness check:
+
+while(await Url.exists({ shortCode })) {
+    shortCode = nanoid(6);
+}
+
+---
+
+## Approach 2: Base62 Encoding (Recommended)
+
+Characters:
+
+a-z
+A-Z
+0-9
+
+Total:
+
+62 characters
+
+### Example
+
+Auto Increment ID:
+
+1 -> b
+2 -> c
+61 -> 9
+62 -> ba
+
+Convert numeric ID to Base62.
+
+123456 -> W7E
+
+### Pros
+
+* No collisions
+* Deterministic
+* Short URLs
+
+### Cons
+
+* Requires sequence generation
+
+Most interviewers like this approach.
+
+---
+
+# 6. Node.js Implementation
+
+### Create URL
+
+app.post('/shorten', async (req, res) => {
+
+    const { url } = req.body;
+
+    const shortCode = nanoid(6);
+
+    await Url.create({
+        shortCode,
+        longUrl: url
+    });
+
+    res.json({
+        shortUrl: `https://tiny.ly/${shortCode}`
+    });
+});
+
+---
+
+### Redirect URL
+
+app.get('/:shortCode', async (req, res) => {
+
+    const { shortCode } = req.params;
+
+    const data = await Url.findOne({
+        shortCode
+    });
+
+    if (!data)
+        return res.status(404).send();
+
+    data.clicks++;
+    await data.save();
+
+    res.redirect(data.longUrl);
+});
+
+---
+
+# 7. Caching with Redis
+
+Without Redis:
+
+Every redirect
+→ Database hit
+
+Millions of requests can overload the DB.
+
+---
+
+### Store Mapping
+
+shortCode -> longUrl
+
+Example:
+
+aB3xYz ->
+https://example.com/blog
+
+---
+
+### Redirect Flow
+
+Request
+   |
+Redis Lookup
+   |
+Hit? ---- Yes ---> Redirect
+   |
+   No
+   |
+Database Lookup
+   |
+Store in Redis
+   |
+Redirect
+
+Node.js:
+
+const cached = await redis.get(shortCode);
+
+if(cached){
+    return res.redirect(cached);
+}
+
+This reduces DB load significantly.
+
+---
+
+# 8. Scaling the System
+
+Suppose:
+
+100 million URLs
+10 million redirects/day
+
+---
+
+## Horizontal Scaling
+
+Multiple Node.js instances
+
+          Load Balancer
+         /      |      \
+      Node1  Node2  Node3
+
+Use:
+
+* PM2 Cluster Mode
+* Docker
+* Kubernetes
+
+---
+
+## Database Sharding
+
+Split URLs across servers.
+
+Shard 1
+Shard 2
+Shard 3
+
+Based on:
+
+hash(shortCode)
+
+---
+
+# 9. Analytics Handling
+
+Every redirect updating DB:
+
+clicks++
+
+becomes expensive.
+
+Instead:
+
+Redirect
+  |
+Kafka / RabbitMQ
+  |
+Analytics Consumer
+  |
+Database
+
+Flow:
+
+User Click
+   |
+Queue Event
+   |
+Consumer Updates Click Count
+
+This makes redirects extremely fast.
+
+---
+
+# 10. Avoiding Hot URLs Problem
+
+Imagine:
+
+YouTube URL
+
+gets:
+
+100,000 requests/sec
+
+Solution:
+
+### Redis Cache
+
+Keep hot URLs in memory.
+
+### CDN
+
+Popular redirects can be served closer to users.
+
+---
+
+# 11. Security Considerations
+
+### Validate URLs
+
+validator.isURL(url)
+
+Prevent:
+
+javascript:
+file:
+malicious links
+
+---
+
+### Rate Limiting
+
+Use:
+
+express-rate-limit
+
+Example:
+
+100 requests/minute
+
+per IP.
+
+---
+
+# 12. Interview Answer (2-Minute Version)
+
+> I would build the URL shortener using Node.js, Express, Redis, and MongoDB/PostgreSQL. 
+When a user submits a long URL, the service generates a unique short code (preferably using Base62 encoding of a sequence ID),
+ stores the mapping in the database, and returns a short URL. During redirection, the system first checks Redis for 
+ the shortCode→longUrl mapping. On a cache miss, it fetches from the database and populates Redis. 
+ For scalability, I'd run multiple Node.js instances behind a load balancer, shard the database by shortCode,
+  and use Redis for caching. Analytics events would be sent asynchronously through a queue like RabbitMQ or Kafka to 
+  avoid slowing down redirects. This design supports high throughput, low latency, and horizontal scalability.
+
+This is typically the level of detail expected for a senior Node.js system design interview question.

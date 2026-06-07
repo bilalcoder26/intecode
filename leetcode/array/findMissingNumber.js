@@ -12,8 +12,9 @@ function findMissingNumber(nums){
     }
     let n = maxNum -minNum + 1;
     let expectedSum = (n*(minNum+maxNum)/2);
-    return expectedSum - actualSum;
     console.log('maxNum', maxNum , 'actual' , actualSum)
+
+    return expectedSum - actualSum;
 }
 
 console.log(findMissingNumber([1,4,3,2,6,9,8,7]))

@@ -1,0 +1,424 @@
+How do you ensure zero downtime deployment?
+Zero-downtime deployment means deploying a new version of your application **without interrupting active users 
+or causing service unavailability**.
+
+---
+
+# Goals
+
+During deployment:
+
+✅ Users continue accessing the application
+
+✅ No failed requests
+
+✅ No downtime
+
+✅ Easy rollback if deployment fails
+
+---
+
+# 1. Multiple Instances Behind a Load Balancer
+
+Never deploy to a single server.
+
+          Load Balancer
+                |
+      ---------------------
+      |         |         |
+   App-1     App-2     App-3
+
+If one instance is being updated:
+
+          Load Balancer
+                |
+      ---------------------
+      |                   |
+   App-2              App-3
+
+Traffic continues flowing.
+
+---
+
+# 2. Rolling Deployment
+
+Update instances one at a time.
+
+### Before
+
+App-1 v1
+App-2 v1
+App-3 v1
+
+### Deploy
+
+Step 1:
+App-1 -> v2
+
+Step 2:
+App-2 -> v2
+
+Step 3:
+App-3 -> v2
+
+Users are always served by healthy instances.
+
+### Example in Kubernetes
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 1
+
+Benefits:
+
+* No downtime
+* Minimal risk
+
+---
+
+# 3. Blue-Green Deployment
+
+Maintain two identical environments.
+
+```text
+Blue Environment
+(v1 Production)
+
+Green Environment
+(v2 New Release)
+```
+
+### Before
+
+```text
+Load Balancer
+      |
+    Blue
+```
+
+### Deploy
+
+```text
+Deploy v2
+to Green
+```
+
+### Switch Traffic
+
+```text
+Load Balancer
+      |
+    Green
+```
+
+If issues occur:
+
+```text
+Switch Back
+      |
+     Blue
+```
+
+### Advantages
+
+* Instant rollback
+* Very safe deployment
+
+### Disadvantages
+
+* Requires double infrastructure
+
+---
+
+# 4. Canary Deployment
+
+Release to a small percentage of users first.
+
+```text
+90% -> v1
+10% -> v2
+```
+
+Monitor:
+
+* Error rate
+* Latency
+* CPU
+* Memory
+
+If healthy:
+
+```text
+50% -> v2
+```
+
+Then:
+
+```text
+100% -> v2
+```
+
+Benefits:
+
+* Detects issues early
+* Limits blast radius
+
+---
+
+# 5. Health Checks
+
+Before receiving traffic, a server must prove it's healthy.
+
+Example:
+
+```javascript
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+```
+
+Load balancer checks:
+
+```text
+GET /health
+```
+
+Only healthy instances receive traffic.
+
+---
+
+# 6. Graceful Shutdown
+
+Problem:
+
+```text
+Deploy starts
+|
+Server killed immediately
+|
+Active requests fail
+```
+
+---
+
+### Solution
+
+Handle shutdown signals.
+
+```javascript
+process.on('SIGTERM', () => {
+  server.close(() => {
+    process.exit(0);
+  });
+});
+```
+
+Flow:
+
+```text
+Stop accepting new requests
+|
+Finish active requests
+|
+Shutdown
+```
+
+This prevents request loss.
+
+---
+
+# 7. Database Migration Strategy
+
+Most downtime comes from database changes.
+
+Bad deployment:
+
+```text
+Deploy Code
+|
+Code expects new column
+|
+Column doesn't exist
+|
+Application crashes
+```
+
+---
+
+### Backward-Compatible Migrations
+
+Step 1:
+
+```sql
+ALTER TABLE users
+ADD COLUMN phone VARCHAR(20);
+```
+
+Old code still works.
+
+---
+
+Step 2:
+
+Deploy new application.
+
+---
+
+Step 3:
+
+Start using new column.
+
+---
+
+Step 4:
+
+Remove old column later.
+
+This is often called:
+
+```text
+Expand → Migrate → Contract
+```
+
+---
+
+# 8. Feature Flags
+
+Instead of releasing unfinished code:
+
+```text
+Deploy Code
+|
+Feature Disabled
+```
+
+Enable later:
+
+```text
+Feature Flag = ON
+```
+
+Benefits:
+
+* Instant rollback
+* Safer releases
+
+Popular tools:
+
+* [LaunchDarkly](https://launchdarkly.com?utm_source=chatgpt.com)
+* [Unleash](https://www.getunleash.io?utm_source=chatgpt.com)
+
+---
+
+# 9. Session Handling
+
+Problem:
+
+```text
+User logged into App-1
+Deployment removes App-1
+Session lost
+```
+
+Solution:
+
+Store sessions externally.
+
+Example:
+
+```text
+Node.js
+   |
+ Redis
+```
+
+All instances share session data.
+
+---
+
+# 10. Container Orchestration
+
+With Kubernetes:
+
+```text
+Deployment
+    |
+Rolling Update
+    |
+Readiness Probe
+    |
+Liveness Probe
+```
+
+Example:
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+```
+
+Traffic is routed only after readiness succeeds.
+
+---
+
+# 11. Monitoring During Deployment
+
+Track:
+
+* Error rate
+* Response time
+* CPU
+* Memory
+* Success rate
+
+Tools:
+
+* [Prometheus](https://prometheus.io?utm_source=chatgpt.com)
+* [Grafana](https://grafana.com?utm_source=chatgpt.com)
+* [Datadog](https://www.datadoghq.com?utm_source=chatgpt.com)
+
+If metrics worsen:
+
+```text
+Rollback Immediately
+```
+
+---
+
+# Example Production Flow
+
+```text
+Build Docker Image
+        |
+Deploy to Canary (10%)
+        |
+Health Checks
+        |
+Monitor Metrics
+        |
+Increase to 50%
+        |
+Increase to 100%
+        |
+Remove Old Version
+```
+
+No user-facing downtime occurs.
+
+---
+
+# Interview Answer (2-Minute Version)
+
+> To ensure zero-downtime deployments, I run multiple application instances behind a load balancer and 
+avoid deploying to all servers simultaneously. I typically use rolling deployments or canary deployments 
+so traffic is gradually shifted to the new version while healthy instances continue serving requests. 
+Each instance exposes health-check endpoints, and readiness probes ensure traffic is routed only after 
+the application is fully initialized. During shutdown, I implement graceful shutdown to finish in-flight 
+requests before terminating the process. For database changes, I use backward-compatible migrations following 
+the expand-migrate-contract approach. I also use feature flags to decouple deployment from feature release and 
+maintain monitoring dashboards and alerts to quickly detect issues. If a problem occurs, I can roll back immediately 
+using blue-green or canary deployment strategies. This approach allows deployments without impacting users.

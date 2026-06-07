@@ -1,0 +1,68 @@
+What is clustering in Node.js?
+Clustering in Node.js refers to a technique used to improve the performance and scalability of a Node.js 
+application by taking advantage of multi-core systems.
+
+### 🚀 What problem does it solve?
+
+Node.js runs on a single thread by default. That means:
+
+* It uses only **one CPU core**, even if your machine has many.
+* Heavy traffic or CPU work can become a bottleneck.
+
+### 🧠 What is clustering?
+
+Clustering allows you to create multiple instances (called *workers*) of your Node.js app that run simultaneously, 
+each on a different CPU core. These workers share the same server port and handle incoming requests together.
+
+This is done using the built-in **Node.js Cluster module**.
+
+### ⚙️ How it works
+
+* A **master process** (also called the primary process) is created.
+* It forks multiple **worker processes** (usually equal to the number of CPU cores).
+* Each worker runs your app independently.
+* Incoming requests are distributed among the workers (load balancing).
+
+### 📦 Example
+
+const cluster = require('cluster');
+const os = require('os');
+
+if (cluster.isMaster) {
+  const numCPUs = os.cpus().length;
+
+  console.log(`Master process is running`);
+
+  // Fork workers
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+} else {
+  // Workers share the same port
+  const http = require('http');
+
+  http.createServer((req, res) => {
+    res.writeHead(200);
+    res.end('Hello from worker ' + process.pid);
+  }).listen(3000);
+
+  console.log(`Worker ${process.pid} started`);
+}
+
+### 👍 Benefits
+
+* Uses all CPU cores efficiently
+* Improves performance under load
+* Increases application availability (if one worker crashes, others keep running)
+
+### ⚠️ Considerations
+
+* Workers don’t share memory → you may need external storage (like Redis) for shared state
+* Adds complexity to debugging and logging
+* Not ideal for CPU-heavy tasks (use worker threads instead)
+
+---
+
+In short, clustering in Node.js is about **running multiple copies of your app in parallel to handle more traffic and 
+make better use of hardware**.

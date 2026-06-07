@@ -1,0 +1,339 @@
+How to optimize API performance
+
+Optimizing API performance in Node.js is about reducing response time, increasing throughput, 
+and efficiently using resources.
+
+# 1. Use Asynchronous Operations
+
+❌ Blocking code:
+
+const data = fs.readFileSync('file.txt');
+
+This blocks the event loop.
+
+✅ Non-blocking:
+
+const data = await fs.promises.readFile('file.txt');
+
+Node.js can continue handling other requests while waiting for I/O.
+
+---
+
+# 2. Add Caching with Redis
+
+If the same data is requested frequently, avoid hitting the database every time.
+
+Client
+  |
+Node.js
+  |
+Redis
+  |
+Database
+
+Example:
+
+const cachedUser = await redisClient.get(`user:${id}`);
+
+if (cachedUser) {
+    return JSON.parse(cachedUser);
+}
+
+Benefits:
+
+* Faster responses
+* Reduced DB load
+
+---
+
+# 3. Optimize Database Queries
+
+### Select Only Required Fields
+
+❌
+
+const users = await User.find();
+
+✅
+
+const users = await User.find().select('name email');
+
+---
+
+### Add Indexes
+
+Without index:
+
+O(n)
+
+With index:
+
+O(log n)
+
+MongoDB:
+
+userSchema.index({ email: 1 });
+
+---
+
+# 4. Implement Pagination
+
+❌
+
+const users = await User.find();
+
+Fetching millions of rows is expensive.
+
+✅
+
+const users = await User.find()
+    .skip(offset)
+    .limit(20);
+
+API:
+
+GET /users?page=1&limit=20
+
+---
+
+# 5. Use Compression
+
+Compress responses before sending them.
+
+Install:
+
+npm install compression
+
+const compression = require('compression');
+
+app.use(compression());
+
+Large JSON responses become much smaller.
+
+---
+
+# 6. Avoid CPU-Intensive Tasks on the Main Thread
+
+Bad examples:
+
+* Image processing
+* Video encoding
+* Large calculations
+
+Use:
+
+* worker_threads
+* Background workers
+
+Example:
+
+const { Worker } = require('worker_threads');
+
+This keeps the event loop responsive.
+
+---
+
+# 7. Use Clustering
+
+Node.js uses a single CPU core by default.
+
+Use clustering to utilize all CPU cores.
+
+const cluster = require('cluster');
+const os = require('os');
+
+if (cluster.isPrimary) {
+    for (let i = 0; i < os.cpus().length; i++) {
+        cluster.fork();
+    }
+}
+
+Benefits:
+
+* Higher throughput
+* Better CPU utilization
+
+---
+
+# 8. Use Connection Pooling
+
+Creating a database connection for every request is expensive.
+
+Instead:
+
+Request
+   |
+Connection Pool
+   |
+Database
+
+Most drivers support pooling automatically.
+
+Example with PostgreSQL:
+
+const pool = new Pool({
+    max: 20
+});
+
+---
+
+# 9. Parallelize Independent Operations
+
+❌ Sequential
+
+const user = await getUser();
+const orders = await getOrders();
+
+Time:
+
+100ms + 100ms = 200ms
+
+✅ Parallel
+
+const [user, orders] = await Promise.all([
+    getUser(),
+    getOrders()
+]);
+
+Time:
+
+≈100ms
+
+---
+
+# 10. Use a Reverse Proxy
+
+A reverse proxy such as:
+
+* NGINX
+
+can:
+
+* Cache responses
+* Handle SSL termination
+* Load balance requests
+
+Client
+  |
+NGINX
+  |
+Node.js
+
+---
+
+# 11. Reduce Payload Size
+
+❌
+
+{
+  "name": "Bilal",
+  "email": "abc@gmail.com",
+  "address": "...",
+  "profilePic": "...",
+  "history": "..."
+}
+
+If the client only needs the name:
+
+✅
+
+{
+  "name": "Bilal"
+}
+
+Send only necessary data.
+
+---
+
+# 12. Use HTTP Caching
+
+Set cache headers:
+
+res.set('Cache-Control', 'public, max-age=3600');
+
+Browser/CDN can serve cached responses.
+
+---
+
+# 13. Move Long Tasks to Queues
+
+For emails, notifications, reports, etc.
+
+Use:
+
+* RabbitMQ
+* BullMQ
+* Apache Kafka
+
+Client
+  |
+API
+  |
+Queue
+  |
+Worker
+
+Return immediately and process later.
+
+---
+
+# 14. Monitor Performance
+
+Measure before optimizing.
+
+Useful tools:
+
+* [PM2 Monitoring](https://pm2.io?utm_source=chatgpt.com)
+* [Node.js Clinic.js](https://clinicjs.org/?utm_source=chatgpt.com)
+
+Monitor:
+
+* CPU usage
+* Memory usage
+* Event loop lag
+* Response times
+
+---
+
+# 15. Avoid Memory Leaks
+
+Common causes:
+
+const cache = {};
+
+that grows forever.
+
+Also:
+
+* Unremoved event listeners
+* Large global variables
+* Uncleared timers
+
+Monitor heap memory regularly.
+
+---
+
+# Typical Production Architecture
+
+Users
+  |
+Load Balancer
+  |
+Node.js Cluster
+  |
+Redis Cache
+  |
+Database
+  |
+Queue (RabbitMQ/Kafka)
+  |
+Workers
+
+---
+
+## Interview Answer (Short)
+
+> To optimize API performance in Node.js, I use asynchronous operations, Redis caching, database indexing, 
+pagination, compression, connection pooling, Promise.all for parallel execution, clustering for multi-core utilization, 
+queues for background processing, and load balancing. I also monitor CPU, memory, and response times 
+to identify bottlenecks and continuously improve performance.
