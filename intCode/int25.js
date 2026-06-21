@@ -13,3 +13,18 @@ function reverseSentence(str){
     return result.join(' ')
 }
 console.log(reverseSentence(str))
+
+function reverseSentenceOptimized(str){
+    let arr = str.split("");
+    let left =0;
+    let right=str.length-1;
+    while(left<right){
+        let temp = arr[left];
+        arr[left] = arr[right];
+        arr[right] = temp;
+        left++;
+        right--;
+    }
+    return arr.join("");
+}
+console.log('reverseSentenceOptimized', reverseSentenceOptimized("HELLO REACT NODE"))

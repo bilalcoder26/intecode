@@ -1,0 +1,12 @@
+"Hi, I'm Bilal Ahmed, and I have around 5 years of experience as a Full Stack Developer. 
+I started my career as a Frontend Developer working with React.js, HTML, CSS, and JavaScript. 
+Over time, I expanded my skills into backend development using Node.js and Express.js, which helped me 
+become a full-stack developer.
+
+Currently, I am working at HCL Technologies on the Western Union project,
+ where I have been contributing for the last 1.5 years. Prior to HCL, I worked with Taazaa Tech and gained 
+ experience across Healthcare, EdTech, and Financial domains. I have worked on developing applications from scratch, 
+ designing APIs, integrating third-party services, and building scalable web applications.
+
+My core strengths are React.js, Node.js, REST APIs, system design fundamentals, and problem-solving. 
+I'm now looking for opportunities where I can contribute to impactful projects and continue growing as a full-stack engineer."

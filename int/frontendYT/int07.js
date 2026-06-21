@@ -8,6 +8,7 @@ const arr = [
 const grouped = arr.reduce((acc, curr) => {
     // Check if the class already exists in the accumulator
     let existingGroup = acc.find(group => group.class === curr.class);
+    console.log("existingGroup",existingGroup)
     if (existingGroup) {
         // Add the name to the existing group
         existingGroup.name.push(curr.name);
@@ -19,3 +20,4 @@ const grouped = arr.reduce((acc, curr) => {
 }, []);
 
 console.log(grouped);
+

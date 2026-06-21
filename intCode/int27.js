@@ -15,7 +15,7 @@ function multiDem(arr){
     return result;
 
 }
-console.log(multiDem([2,5,4,6,7,3]))
+// console.log(multiDem([2,5,4,6,7,3]))
 
 
 
@@ -25,7 +25,7 @@ function multiDem2(arr) {
     let result = [];
     let map = new Map();
 
-    for (let num of arr) {
+    for (const num of arr) {
         let complement = 7 - num;
         
         if (map.has(complement)) {
@@ -41,7 +41,7 @@ function multiDem2(arr) {
     return result;
 }
 
-console.log(multiDem2([2, 5, 4, 6, 7, 3]));
+// console.log(multiDem2([2, 5, 4, 6, 7, 3]));
 // Output: [[2, 5], [4, 3], [7]]
  
 // Output: [[2, 5], [4, 3], [7]]

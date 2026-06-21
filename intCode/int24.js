@@ -22,7 +22,7 @@ function findUnpairedBrackets(str) {
 
     let openCount = 0, closeCount = 0;
 
-    for (let char of str) {
+    for (const char of str) {
         if (char === '(') {
             openCount++; // Count opening brackets
         } else if (char === ')') {

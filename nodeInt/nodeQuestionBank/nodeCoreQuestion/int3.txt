@@ -10,7 +10,6 @@ unlike traditional servers that create a new thread for each request.
 ## The Core Concept
 
 ### Traditional Multi-Threaded Server (Apache, Java Servlets)
-```
 Request 1 → Thread 1 (1MB stack) → [====waiting====] → Response
 Request 2 → Thread 2 (1MB stack) → [==waiting==] → Response
 Request 3 → Thread 3 (1MB stack) → [========waiting========] → Response
@@ -19,10 +18,9 @@ Request 1000 → Thread 1000 (1MB stack) → [===waiting===] → Response
 
 Memory: 1000 threads × 1MB = 1GB minimum overhead
 CPU: Context switching overhead between threads
-```
 
 ### Node.js Single-Threaded Server
-```
+
 Single Thread (JavaScript execution)
     ↓
 Request 1 → Start → "I'll wait async" → Continue
@@ -34,7 +32,6 @@ When I/O completes, callbacks execute on same thread
 
 Memory: ~10MB (not per-request)
 CPU: No context switching overhead
-```
 
 ---
 
@@ -42,7 +39,6 @@ CPU: No context switching overhead
 
 The **magic** is that JavaScript execution is single-threaded, but **waiting happens outside** the main thread.
 
-```javascript
 const http = require('http');
 const fs = require('fs');
 
@@ -60,11 +56,9 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(3000);
-```
 
 ### Visual Timeline
 
-```
 Time ─────────────────────────────────────────────────►
 
 Thread 1: [Req1 start][Req2 start][Req3 start]...[Callback1][Callback2][Callback3]
@@ -89,7 +83,6 @@ Thread 1: [Req1 start][Req2 start][Req3 start]...[Callback1][Callback2][Callback
 ### The Helper Threads (Behind the Scenes)
 Node.js uses a **thread pool** (libuv) for heavy operations:
 
-```javascript
 // These operations use hidden threads (default 4):
 fs.readFile()        // File system operations
 crypto.pbkdf2()      // Cryptographic functions
@@ -98,7 +91,6 @@ DNS.lookup()         // Domain resolution
 
 // Your JavaScript still runs on main thread
 // But the waiting happens on other threads
-```
 
 **Important distinction:**
 - **JavaScript execution** is single-threaded
@@ -109,7 +101,6 @@ DNS.lookup()         // Domain resolution
 
 ## Real-World Example: 1000 Concurrent Database Queries
 
-```javascript
 // Multi-threaded server (Java)
 // 1000 requests = 1000 threads (each blocks on DB query)
 ExecutorService executor = Executors.newFixedThreadPool(1000);
@@ -122,9 +113,7 @@ for (int i = 0; i < 1000; i++) {
 }
 // Memory: 1000 threads × 1MB = 1GB
 // CPU: 1000 threads fighting for CPU time
-```
 
-```javascript
 // Node.js single-threaded server
 // 1000 requests = 1 thread (non-blocking queries)
 const app = require('express')();
@@ -147,7 +136,6 @@ app.listen(3000);
 ## The Single Thread Advantage
 
 ### 1. **No Thread Synchronization Overhead**
-```javascript
 // Multi-threaded: Must use locks
 synchronized(lock) {
     counter++;  // Expensive
@@ -159,10 +147,9 @@ app.get('/increment', (req, res) => {
     counter++;  // Safe! Only one thread touches this
     res.json({ counter });
 });
-```
 
 ### 2. **No Context Switching**
-```
+
 Multi-threaded:
 Thread 1 → [work] → context switch (costly) → Thread 2 → [work]
                           ↑
@@ -170,10 +157,9 @@ Thread 1 → [work] → context switch (costly) → Thread 2 → [work]
 
 Node.js:
 Thread 1 → [work continuously] → no context switches
-```
 
 ### 3. **Lower Memory Usage**
-```bash
+
 # Multi-threaded server (Java)
 $ ps aux | grep java
 USER  PID  %MEM  RSS
@@ -183,10 +169,9 @@ app   123  45%   4.5GB  # 5000 threads
 $ ps aux | grep node
 USER  PID  %MEM  RSS  
 app   456  2%    128MB  # Single thread, 5000 connections
-```
 
 ### 4. **Simpler Programming Model**
-```javascript
+
 // No worry about:
 // - Race conditions
 // - Deadlocks
@@ -208,7 +193,6 @@ async function handleRequest(req) {
 
 ### CPU-Intensive Tasks Block Everything
 
-```javascript
 app.get('/compute', (req, res) => {
     // BAD: This blocks the entire server!
     let result = 0;
@@ -222,10 +206,8 @@ app.get('/compute', (req, res) => {
     // - Event loop is frozen
     // - Server appears dead
 });
-```
 
 **Demonstration of blocking:**
-```javascript
 const express = require('express');
 const app = express();
 
@@ -254,7 +236,6 @@ app.get('/ping', (req, res) => {
 ## Solutions for CPU-Intensive Work
 
 ### 1. **Worker Threads** (Node.js 10+)
-```javascript
 const { Worker } = require('worker_threads');
 
 app.get('/compute', (req, res) => {
@@ -279,7 +260,6 @@ parentPort.on('message', (task) => {
 ```
 
 ### 2. **Cluster Module** (Multiple Node.js processes)
-```javascript
 const cluster = require('cluster');
 const http = require('http');
 const numCPUs = require('os').cpus().length;
@@ -324,7 +304,6 @@ app.post('/process-image', async (req, res) => {
 
 ## The Hidden Thread Pool (libuv)
 
-```javascript
 const crypto = require('crypto');
 const fs = require('fs');
 
@@ -339,10 +318,8 @@ fs.readFile('large-file.txt', (err, data) => {
 
 // Adjust thread pool size (at startup)
 process.env.UV_THREADPOOL_SIZE = 8;
-```
 
 **Thread pool visualization:**
-```
 Main Thread (JavaScript)
     │
     ├─> crypto.pbkdf2() ──┐
@@ -351,14 +328,12 @@ Main Thread (JavaScript)
     └─> zlib.deflate()   ──┘
          │
          └─> Callbacks return to Main Thread
-```
 
 ---
 
 ## Best Practices for Single-Threaded Architecture
 
 ### ✅ **DO:**
-```javascript
 // Use async I/O
 await fs.promises.readFile('file.txt');
 
@@ -380,10 +355,8 @@ function processLargeArray(items, callback) {
     }
     processChunk();
 }
-```
 
 ### ❌ **DON'T:**
-```javascript
 // Never use sync I/O
 const data = fs.readFileSync('large.txt');  // BLOCKS
 
@@ -392,7 +365,6 @@ for (let i = 0; i < 1e9; i++) { }  // BLOCKS
 
 // Never block with JSON.parse on huge objects
 const huge = JSON.parse(10MBString);  // BLOCKS
-```
 
 ---
 

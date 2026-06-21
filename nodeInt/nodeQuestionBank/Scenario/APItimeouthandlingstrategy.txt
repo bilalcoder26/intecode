@@ -1,5 +1,6 @@
 API timeout handling strategy?
-Handling API timeouts is critical in distributed systems because a slow downstream service can cause your entire application to become unresponsive.
+Handling API timeouts is critical in distributed systems because a slow downstream service can cause your entire application 
+to become unresponsive.
 
 ---
 

@@ -1,7 +1,9 @@
 Microservices architecture in Node.js
 # Microservices Architecture in Node.js
 
-A **Microservices Architecture** is a design pattern where an application is split into multiple small, independent services. Each service is responsible for a specific business capability and can be developed, deployed, and scaled independently.
+A **Microservices Architecture** is a design pattern where an application is split into multiple small, 
+independent services. Each service is responsible for a specific business capability and can be developed, 
+deployed, and scaled independently.
 
 ---
 
@@ -11,7 +13,6 @@ A **Microservices Architecture** is a design pattern where an application is spl
 
 Everything runs in a single application.
 
-```text
 E-Commerce App
 |
 |-- User Module
@@ -20,7 +21,6 @@ E-Commerce App
 |-- Payment Module
 |
 Single Database
-```
 
 ### Problems
 
@@ -35,7 +35,6 @@ Single Database
 
 Each module becomes a separate service.
 
-```text
                 API Gateway
                       |
 ------------------------------------------------
@@ -43,7 +42,6 @@ Each module becomes a separate service.
 v              v             v                 v
 User       Product       Order          Payment
 Service    Service       Service        Service
-```
 
 Each service:
 
@@ -58,19 +56,15 @@ Each service:
 
 Instead of one large application:
 
-```text
 E-Commerce App
-```
 
 We create:
 
-```text
 User Service
 Product Service
 Order Service
 Payment Service
 Notification Service
-```
 
 Each service focuses on one responsibility.
 
@@ -78,7 +72,6 @@ Each service focuses on one responsibility.
 
 # Typical Node.js Microservices Architecture
 
-```text
                     Client
                        |
                        v
@@ -95,7 +88,6 @@ Service       Service          Service       Service
                        |
                  Notification
                     Service
-```
 
 ---
 
@@ -113,7 +105,6 @@ Responsibilities:
 * Rate limiting
 * Logging
 
-```text
 Client
    |
    v
@@ -122,7 +113,6 @@ API Gateway
    +--> User Service
    +--> Order Service
    +--> Product Service
-```
 
 Popular choices:
 
@@ -138,25 +128,19 @@ Example:
 
 ### User Service
 
-```text
 /user/register
 /user/login
 /user/profile
-```
 
 ### Product Service
 
-```text
 /products
 /products/:id
-```
 
 ### Order Service
 
-```text
 /orders
 /orders/:id
-```
 
 Each service can be built using Express.js, NestJS, or Fastify.
 
@@ -166,7 +150,6 @@ Each service can be built using Express.js, NestJS, or Fastify.
 
 Recommended pattern:
 
-```text
 User Service
      |
      v
@@ -181,7 +164,6 @@ Order Service
      |
      v
  Order DB
-```
 
 Benefits:
 
@@ -191,14 +173,12 @@ Benefits:
 
 Avoid:
 
-```text
 User Service
 Product Service
 Order Service
        |
        v
  Shared Database
-```
 
 This creates tight coupling.
 
@@ -214,22 +194,18 @@ There are two main approaches.
 
 Uses HTTP or gRPC.
 
-```text
 Order Service
       |
 HTTP Call
       |
       v
 Product Service
-```
 
 Example:
 
-```js
 const response = await axios.get(
   "http://product-service/products/1"
 );
-```
 
 ### Advantages
 
@@ -248,7 +224,6 @@ const response = await axios.get(
 
 Uses RabbitMQ or Kafka.
 
-```text
 Order Service
       |
       v
@@ -259,16 +234,13 @@ Kafka
 v                 v
 Inventory     Notification
 Service        Service
-```
 
 Example event:
 
-```json
 {
   "event": "ORDER_CREATED",
   "orderId": 123
 }
-```
 
 Consumers react independently.
 
@@ -280,13 +252,10 @@ In large systems, service locations change.
 
 Instead of:
 
-```text
 http://192.168.1.10:3000
-```
 
 Use service discovery.
 
-```text
 Order Service
       |
       v
@@ -294,7 +263,6 @@ Service Registry
       |
       v
 Product Service
-```
 
 Popular tools:
 
@@ -310,7 +278,6 @@ Common approach:
 
 ### JWT Authentication
 
-```text
 Client
    |
 Login
@@ -319,13 +286,10 @@ Login
 Auth Service
    |
 Returns JWT
-```
 
 Every request contains:
 
-```text
 Authorization: Bearer JWT
-```
 
 Other services verify the token.
 
@@ -337,7 +301,6 @@ Very common in modern systems.
 
 ### Order Placement Flow
 
-```text
 User Places Order
         |
         v
@@ -351,7 +314,6 @@ Kafka Event
 v               v               v
 Payment      Inventory     Notification
 Service      Service       Service
-```
 
 Benefits:
 
@@ -373,11 +335,9 @@ Deploy Order Service without redeploying User Service.
 
 If orders increase:
 
-```text
 Order Service x 10 instances
 
 User Service x 2 instances
-```
 
 Scale only what needs scaling.
 
@@ -387,9 +347,7 @@ Scale only what needs scaling.
 
 If Notification Service crashes:
 
-```text
 Notification Service ❌
-```
 
 User and Order services still work.
 
@@ -399,11 +357,9 @@ User and Order services still work.
 
 Different services can use different technologies.
 
-```text
 User Service      -> Node.js
 Analytics Service -> Python
 Payment Service   -> Java
-```
 
 ---
 
@@ -427,11 +383,9 @@ Transactions across services are difficult.
 
 Example:
 
-```text
 Order Service
 Payment Service
 Inventory Service
-```
 
 Traditional database transactions won't work across all services.
 
@@ -458,13 +412,11 @@ Tools:
 
 ## API Gateway Pattern
 
-```text
 Client
   |
 API Gateway
   |
 Services
-```
 
 ---
 
@@ -472,12 +424,10 @@ Services
 
 Protects against cascading failures.
 
-```text
 Order Service
       |
       X
 Payment Service Down
-```
 
 Circuit breaker stops repeated failed calls.
 
@@ -487,7 +437,6 @@ Circuit breaker stops repeated failed calls.
 
 Manages distributed transactions.
 
-```text
 Order Created
       |
 Payment Success
@@ -495,7 +444,6 @@ Payment Success
 Inventory Updated
       |
 Notification Sent
-```
 
 If one step fails, compensating actions are triggered.
 
@@ -505,11 +453,9 @@ If one step fails, compensating actions are triggered.
 
 Store events instead of current state.
 
-```text
 Account Created
 Money Deposited
 Money Withdrawn
-```
 
 Current state is reconstructed from events.
 
@@ -517,7 +463,6 @@ Current state is reconstructed from events.
 
 # Node.js Microservices Tech Stack (Common Interview Answer)
 
-```text
 API Gateway      -> NGINX / Kong
 Backend          -> Express.js / NestJS
 Database         -> PostgreSQL / MongoDB
@@ -528,7 +473,6 @@ Containerization -> Docker
 Orchestration    -> Kubernetes
 Monitoring       -> Prometheus + Grafana
 Logging          -> ELK Stack
-```
 
 # Interview Answer (2-Minute Version)
 
