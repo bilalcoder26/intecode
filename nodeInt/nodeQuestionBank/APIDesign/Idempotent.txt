@@ -13,13 +13,11 @@ requests can occur.
 
 Suppose a user updates their name:
 
-```http
 PUT /users/1
 
 {
   "name": "Bilal"
 }
-```
 
 If this request is sent:
 
@@ -29,12 +27,10 @@ If this request is sent:
 
 The final state remains:
 
-```json
 {
   "id": 1,
   "name": "Bilal"
 }
-```
 
 This operation is **idempotent**.
 
@@ -54,9 +50,7 @@ This operation is **idempotent**.
 
 ## GET Example
 
-```http
 GET /users/1
-```
 
 Calling it 100 times doesn't change anything.
 
@@ -68,25 +62,20 @@ Calling it 100 times doesn't change anything.
 
 Existing user:
 
-```json
 {
   "name": "Ahmed"
 }
-```
 
 Request:
 
-```http
 PUT /users/1
 
 {
   "name": "Bilal"
 }
-```
 
 After 1 call:
 
-```json
 {
   "name": "Bilal"
 }
@@ -94,11 +83,9 @@ After 1 call:
 
 After 10 calls:
 
-```json
 {
   "name": "Bilal"
 }
-```
 
 ✅ Idempotent
 
@@ -106,27 +93,19 @@ After 10 calls:
 
 ## DELETE Example
 
-```http
 DELETE /users/1
-```
 
 First request:
 
-```text
 User deleted
-```
 
 Second request:
 
-```text
 User already doesn't exist
-```
 
 The final state is still:
 
-```text
 User absent
-```
 
 ✅ Idempotent
 
@@ -134,31 +113,23 @@ User absent
 
 ## POST Example
 
-```http
 POST /orders
 
 {
   "productId": 101
 }
-```
 
 Request 1:
 
-```text
 Order #1001 created
-```
 
 Request 2:
 
-```text
 Order #1002 created
-```
 
 Request 3:
 
-```text
 Order #1003 created
-```
 
 Multiple requests create multiple resources.
 
@@ -170,13 +141,11 @@ Multiple requests create multiple resources.
 
 Imagine a payment API.
 
-```text
 Client
    ↓
 POST /payments
    ↓
 Payment Processed
-```
 
 Network timeout occurs.
 
@@ -184,11 +153,9 @@ Client doesn't know whether payment succeeded and retries.
 
 Without idempotency:
 
-```text
 Payment #1 = ₹1000
 Retry
 Payment #2 = ₹1000
-```
 
 Customer charged twice.
 
@@ -200,39 +167,31 @@ A common solution is using an **Idempotency-Key** header.
 
 ### Request
 
-```http
 POST /payments
 Idempotency-Key: abc123
 
 {
   "amount": 1000
 }
-```
 
 Server stores:
 
-```text
 abc123 → Payment Success
-```
 
 ---
 
 ### Retry Request
 
-```http
 POST /payments
 Idempotency-Key: abc123
 
 {
   "amount": 1000
 }
-```
 
 Instead of creating a new payment:
 
-```text
 Return previous response
-```
 
 No duplicate payment.
 
@@ -242,7 +201,6 @@ No duplicate payment.
 
 Simple in-memory example:
 
-```javascript
 const processedRequests = new Map();
 
 app.post('/payments', (req, res) => {
@@ -264,7 +222,6 @@ app.post('/payments', (req, res) => {
 
     res.json(response);
 });
-```
 
 ---
 
@@ -291,13 +248,11 @@ Example table:
 
 ### Idempotent PATCH
 
-```http
 PATCH /users/1
 
 {
   "status": "ACTIVE"
 }
-```
 
 Repeated calls produce same result.
 
@@ -307,23 +262,18 @@ Repeated calls produce same result.
 
 ### Non-Idempotent PATCH
 
-```http
 PATCH /users/1
 
 {
   "incrementBalance": 100
 }
-```
 
 Each request changes state.
 
-```text
 1000
 1100
 1200
 1300
-```
-
 ❌ Not idempotent
 
 That's why PATCH is often considered "depends on implementation."

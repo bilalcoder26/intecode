@@ -409,7 +409,6 @@ Choose Kafka when:
 
 Example:
 
-```text
 Order Created
       |
       v
@@ -419,7 +418,6 @@ Kafka Topic
 |          |           |
 v          v           v
 Billing  Analytics  Shipping
-```
 
 All services receive the same event independently.
 
@@ -434,7 +432,6 @@ All services receive the same event independently.
 
 ### Real Production Example
 
-```text
 E-commerce Application
 
 Order Service
@@ -451,7 +448,6 @@ Service   Service     Service
 
 For background jobs inside a service:
 
-```text
 Order Service
       |
       v
@@ -459,6 +455,5 @@ RabbitMQ
       |
       v
 Send Email Worker
-```
 
 A common architecture is to use **Kafka for inter-service events** and **RabbitMQ for background task processing**.

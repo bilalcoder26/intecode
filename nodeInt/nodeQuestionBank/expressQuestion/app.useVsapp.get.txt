@@ -21,7 +21,6 @@ app.use((req, res, next) => {
     console.log("Middleware Executed");
     next();
 });
-```
 
 ### Runs for ALL requests
 
@@ -107,7 +106,6 @@ unless separate routes are defined.
 
 # Common Real-World Example
 
-```javascript
 const express = require('express');
 const app = express();
 
@@ -128,7 +126,6 @@ app.get('/profile', (req, res) => {
 
 ### Flow for GET /profile
 
-```text
 Request
    ↓
 express.json()
@@ -138,7 +135,6 @@ Auth Middleware
 app.get('/profile')
    ↓
 Response
-```
 
 ---
 

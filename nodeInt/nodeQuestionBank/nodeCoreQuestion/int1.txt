@@ -16,24 +16,19 @@ to run outside of a web browser - typically on servers.
 ### 1. **Single-Threaded Event Loop** (The Heart of Node.js)
 
 Traditional servers (Apache, IIS) create a new thread for each connection:
-```
 Client 1 → Thread 1 (blocked waiting)
 Client 2 → Thread 2 (blocked waiting)
 Client 3 → Thread 3 (blocked waiting)
 // 1000 clients = 1000 threads (memory heavy)
-```
 
 Node.js uses **single thread** with **event loop**:
-```
 Client 1 → Request → Event Loop (non-blocking) → Handle response when ready
 Client 2 → Request ↗
 Client 3 → Request ↗
 // One thread handles thousands of concurrent connections
-```
 
 ### 2. **The Event Loop Phases**
 
-```javascript
 // Visual representation of event loop
    ┌───────────────────────────┐
 ┌─>│           timers          │  // setTimeout, setInterval
@@ -53,7 +48,6 @@ Client 3 → Request ↗
 │  ┌─────────────┴─────────────┐
 └──┤      close callbacks      │  // socket.on('close')
    └───────────────────────────┘
-```
 
 ### 3. **Non-Blocking I/O**
 
@@ -117,7 +111,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(3000);
-```
 
 **What happens with 1000 concurrent requests to `/slow`?**
 - All 1000 timeouts are queued in the event loop
@@ -204,10 +197,8 @@ for (int i = 0; i < 10000; i++) {
 }
 // Memory: 200 threads × 1MB = 200MB overhead
 // Can only handle 200 concurrent requests
-```
 
 ### Node.js Event Loop
-```javascript
 // Single thread handles 10,000 concurrent connections
 const db = require('./database');
 

@@ -1,11 +1,10 @@
 How Node.js connects to databases?
-## How Node.js Connects to Databases?
 
-Node.js itself does **not directly communicate with databases**. It uses **database drivers or ORMs** that implement the database protocol.
+Node.js itself does **not directly communicate with databases**. It uses **database drivers or ORMs** that 
+implement the database protocol.
 
 ### Architecture
 
-```text
 Node.js Application
         ↓
 Database Driver / ORM
@@ -13,27 +12,22 @@ Database Driver / ORM
 TCP/IP Network
         ↓
 Database Server
-```
 
 Example:
 
-```text
 Express App
     ↓
 Mongoose
     ↓
 MongoDB
-```
 
 or
 
-```text
 Express App
     ↓
 pg Driver
     ↓
 PostgreSQL
-```
 
 ---
 
@@ -43,13 +37,10 @@ Using **Mongoose**
 
 Install:
 
-```bash
 npm install mongoose
-```
 
 Connection:
 
-```javascript
 const mongoose = require('mongoose');
 
 mongoose.connect(
@@ -61,11 +52,9 @@ mongoose.connect(
 .catch(err => {
     console.error(err);
 });
-```
 
 ### What happens internally?
 
-```text
 Node.js
    ↓
 Mongoose
@@ -75,7 +64,6 @@ MongoDB Driver
 TCP Connection
    ↓
 MongoDB Server
-```
 
 ---
 
@@ -85,13 +73,10 @@ Using **node-postgres**
 
 Install:
 
-```bash
 npm install pg
-```
 
 Example:
 
-```javascript
 const { Client } = require('pg');
 
 const client = new Client({
@@ -109,7 +94,6 @@ const result = await client.query(
 );
 
 console.log(result.rows);
-```
 
 ---
 
@@ -119,13 +103,10 @@ Using **mysql2**
 
 Install:
 
-```bash
 npm install mysql2
-```
 
 Example:
 
-```javascript
 const mysql = require('mysql2/promise');
 
 const connection =
@@ -142,7 +123,6 @@ const [rows] =
     );
 
 console.log(rows);
-```
 
 ---
 
@@ -152,7 +132,6 @@ Creating a new database connection for every request is expensive.
 
 ❌ Bad:
 
-```text
 Request
   ↓
 Create Connection
@@ -160,7 +139,6 @@ Create Connection
 Execute Query
   ↓
 Close Connection
-```
 
 This happens thousands of times.
 
@@ -168,13 +146,11 @@ This happens thousands of times.
 
 ### Solution: Connection Pool
 
-```text
 Pool
  ├── Connection 1
  ├── Connection 2
  ├── Connection 3
  └── Connection 4
-```
 
 Requests borrow and return connections.
 
@@ -182,7 +158,6 @@ Requests borrow and return connections.
 
 ## PostgreSQL Pool Example
 
-```javascript
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -197,7 +172,6 @@ const pool = new Pool({
 const users = await pool.query(
     'SELECT * FROM users'
 );
-```
 
 ---
 
@@ -209,7 +183,6 @@ Node.js uses asynchronous I/O.
 
 Example:
 
-```javascript
 console.log('Start');
 
 User.find()
@@ -218,15 +191,12 @@ User.find()
     });
 
 console.log('End');
-```
 
 Output:
 
-```text
 Start
 End
 [users]
-```
 
 While the database query is running:
 
@@ -249,11 +219,9 @@ Examples:
 
 Example:
 
-```javascript
 await client.query(
     'SELECT * FROM users'
 );
-```
 
 You write SQL manually.
 
@@ -272,10 +240,8 @@ Examples:
 
 Example:
 
-```javascript
 const users =
     await User.findAll();
-```
 
 No SQL required.
 
@@ -285,13 +251,10 @@ No SQL required.
 
 When you execute:
 
-```javascript
 await User.findById(1);
-```
 
 Internally:
 
-```text
 JavaScript Code
       ↓
 ORM/Driver
@@ -315,9 +278,7 @@ Promise Resolved
 
 ### Use Connection Pools
 
-```javascript
 const pool = new Pool();
-```
 
 instead of creating connections per request.
 
@@ -325,40 +286,32 @@ instead of creating connections per request.
 
 ### Store Credentials in Environment Variables
 
-```env
 DB_HOST=localhost
 DB_USER=postgres
 DB_PASSWORD=secret
-```
 
 Use:
 
-```javascript
 process.env.DB_PASSWORD
-```
 
 ---
 
 ### Close Connections Gracefully
 
-```javascript
 process.on('SIGINT', async () => {
     await pool.end();
     process.exit();
 });
-```
 
 ---
 
 ### Handle Connection Errors
 
-```javascript
 try {
     await pool.query('SELECT 1');
 } catch (err) {
     console.error(err);
 }
-```
 
 ---
 

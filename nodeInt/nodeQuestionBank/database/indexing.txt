@@ -9,7 +9,6 @@ Think of it like a book:
 * **Without Index:** You read every page to find a topic.
 * **With Index:** You go directly to the page number from the index section.
 
-```text
 Book Search
 
 Without Index:
@@ -17,7 +16,6 @@ Page 1 → Page 2 → Page 3 → ... → Page 500
 
 With Index:
 Topic "Java" → Page 320
-```
 
 ---
 
@@ -25,70 +23,53 @@ Topic "Java" → Page 320
 
 Suppose a collection contains 10 million users:
 
-```json
 {
   "_id": 1,
   "email": "bilal@gmail.com",
   "name": "Bilal"
 }
-```
 
 Query:
 
-```javascript
 db.users.find({
    email: "bilal@gmail.com"
 })
-```
 
 ### Without Index
 
 MongoDB performs a:
 
-```text
 COLLECTION SCAN (COLLSCAN)
-```
 
 It checks every document one by one.
 
-```text
 Doc1
 Doc2
 Doc3
-...
 Doc10000000
-```
 
 Time Complexity:
 
-```text
 O(n)
-```
 
 ---
 
 ### With Index
 
-```javascript
 db.users.createIndex({
    email: 1
 })
-```
 
 Now MongoDB can directly locate the document.
 
-```text
 Index
  ├── abc@gmail.com
  ├── bilal@gmail.com
  ├── john@gmail.com
-```
 
 Time Complexity approximately:
 
-```text
 O(log n)
-```
 
 Much faster for large datasets.
 
@@ -98,19 +79,15 @@ Much faster for large datasets.
 
 Create an index:
 
-```javascript
 db.users.createIndex({
     email: 1
 })
-```
 
 `1` means ascending order.
 
-```javascript
 db.users.createIndex({
     age: -1
 })
-```
 
 `-1` means descending order.
 
@@ -118,22 +95,18 @@ db.users.createIndex({
 
 ## Index in Mongoose
 
-```javascript
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
         index: true
     }
 });
-```
 
 Or:
 
-```javascript
 userSchema.index({
     email: 1
 });
-```
 
 ---
 
@@ -141,11 +114,9 @@ userSchema.index({
 
 ### 1. Single Field Index
 
-```javascript
 db.users.createIndex({
    email: 1
 });
-```
 
 Used when searching frequently by email.
 
@@ -155,21 +126,17 @@ Used when searching frequently by email.
 
 Multiple fields together.
 
-```javascript
 db.users.createIndex({
     firstName: 1,
     lastName: 1
 });
-```
 
 Useful for:
 
-```javascript
 db.users.find({
     firstName: "Bilal",
     lastName: "Ahmed"
 });
-```
 
 ---
 
@@ -177,26 +144,20 @@ db.users.find({
 
 Prevents duplicate values.
 
-```javascript
 db.users.createIndex(
    { email: 1 },
    { unique: true }
 );
-```
 
 Now duplicate emails cannot be inserted.
 
-```javascript
 {
    email: "bilal@gmail.com"
 }
-```
 
 If another document has the same email:
 
-```text
 Duplicate Key Error
-```
 
 ---
 
@@ -204,22 +165,18 @@ Duplicate Key Error
 
 Used for searching text.
 
-```javascript
 db.posts.createIndex({
    title: "text",
    description: "text"
 });
-```
 
 Search:
 
-```javascript
 db.posts.find({
    $text: {
       $search: "mongodb"
    }
 });
-```
 
 ---
 
@@ -227,12 +184,10 @@ db.posts.find({
 
 Automatically removes documents after a specified time.
 
-```javascript
 db.sessions.createIndex(
     { createdAt: 1 },
     { expireAfterSeconds: 3600 }
 );
-```
 
 Documents expire after 1 hour.
 
@@ -248,12 +203,10 @@ Common use cases:
 
 Indexes only documents containing the field.
 
-```javascript
 db.users.createIndex(
    { phone: 1 },
    { sparse: true }
 );
-```
 
 ---
 
@@ -261,27 +214,21 @@ db.users.createIndex(
 
 Most databases use a data structure called a **B-Tree/B+ Tree**.
 
-```text
               50
           /        \
         20          80
       /   \       /   \
     10    30    70    90
-```
 
 When searching for:
 
-```text
 70
-```
 
 Database doesn't scan all rows.
 
 It traverses the tree:
 
-```text
 50 → 80 → 70
-```
 
 This reduces lookup time dramatically.
 
@@ -291,23 +238,17 @@ This reduces lookup time dramatically.
 
 MongoDB:
 
-```javascript
 db.users.find({
    email: "bilal@gmail.com"
 }).explain("executionStats")
-```
 
 Output:
 
-```text
 IXSCAN
-```
 
 means index is being used.
 
-```text
 COLLSCAN
-```
 
 means full collection scan.
 
@@ -327,13 +268,11 @@ Indexes are not free.
 
 ### 1. Extra Storage
 
-```text
 Data
 +
 Indexes
 =
 More Disk Space
-```
 
 ---
 
@@ -341,9 +280,7 @@ More Disk Space
 
 When inserting/updating:
 
-```javascript
 db.users.insertOne(...)
-```
 
 MongoDB must:
 
@@ -360,9 +297,7 @@ Too many indexes can hurt performance.
 
 Example:
 
-```text
 10 indexes
-```
 
 Every insert/update must update all 10 indexes.
 
@@ -374,11 +309,9 @@ Create indexes on:
 
 ✅ Frequently searched fields
 
-```javascript
 email
 username
 phone
-```
 
 ✅ Fields used in:
 
