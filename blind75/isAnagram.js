@@ -15,7 +15,7 @@ function isAnagram(str1, str2){
     if(str1.length !== str2.length) return false;
     const counts = new Map();
     for(const x of str1){
-        counts.set(x, (counts.get(x) || 0) +1)
+        counts.set(x, (counts.get(x) ?? 0) +1)
     }
     // console.log("map", counts.get('h'))
     for(const x of str2){

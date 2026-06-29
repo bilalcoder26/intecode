@@ -1,0 +1,454 @@
+# `this` Keyword in JavaScript
+
+`this` JavaScript me **current execution context ka reference** hota hai.
+
+Sabse important point:
+
+> **`this` ki value function ko call karne ke tarike par depend karti hai, na ki function kahan define hua hai.**
+
+---
+
+# 1. Global Context
+
+### Browser
+
+console.log(this);
+
+Output:
+
+window
+
+Browser me global scope ka `this` = `window`
+
+---
+
+# 2. Inside a Regular Function
+
+function show() {
+    console.log(this);
+}
+
+show();
+
+### Non-Strict Mode
+
+Output:
+
+window
+
+### Strict Mode
+
+"use strict";
+
+function show() {
+    console.log(this);
+}
+
+show();
+
+Output:
+
+undefined
+
+---
+
+## Interview Question
+
+### Q: What is the value of `this` inside a regular function?
+
+### Answer
+
+* Non-strict mode → Global Object (`window`)
+* Strict mode → `undefined`
+
+---
+
+# 3. Inside an Object Method
+
+const user = {
+    name: "Bilal",
+
+    greet() {
+        console.log(this.name);
+    }
+};
+
+user.greet();
+
+Output:
+
+Bilal
+
+### Why?
+
+`this` refers to the object before the dot.
+
+user.greet()
+
+So:
+
+this === user
+
+---
+
+# 4. Losing Context
+
+const user = {
+    name: "Bilal",
+
+    greet() {
+        console.log(this.name);
+    }
+};
+
+const fn = user.greet;
+
+fn();
+
+Output:
+
+undefined
+
+(or window.name in old browsers)
+
+### Why?
+
+Function is no longer called as:
+
+user.greet()
+
+Instead:
+
+fn()
+
+So context is lost.
+
+---
+
+# 5. Arrow Function and `this`
+
+Arrow functions do NOT have their own `this`.
+
+They inherit `this` from the surrounding scope.
+
+const user = {
+    name: "Bilal",
+
+    greet() {
+        const fn = () => {
+            console.log(this.name);
+        };
+
+        fn();
+    }
+};
+
+user.greet();
+
+Output:
+
+Bilal
+
+Arrow function uses parent's `this`.
+
+---
+
+# Important Interview Example
+
+const user = {
+    name: "Bilal",
+
+    greet: () => {
+        console.log(this.name);
+    }
+};
+
+user.greet();
+
+Output:
+
+undefined
+
+### Why?
+
+Arrow function doesn't create its own `this`.
+
+It takes `this` from global scope.
+
+---
+
+# 6. call()
+
+Used to explicitly set `this`.
+
+function greet() {
+    console.log(this.name);
+}
+
+const user = {
+    name: "Bilal"
+};
+
+greet.call(user);
+
+Output:
+
+Bilal
+
+---
+
+# 7. apply()
+
+Same as call but arguments are passed as array.
+
+function greet(city) {
+    console.log(this.name, city);
+}
+
+const user = {
+    name: "Bilal"
+};
+
+greet.apply(user, ["Delhi"]);
+
+Output:
+
+Bilal Delhi
+
+---
+
+# 8. bind()
+
+Returns a new function with fixed `this`.
+
+function greet() {
+    console.log(this.name);
+}
+
+const user = {
+    name: "Bilal"
+};
+
+const fn = greet.bind(user);
+
+fn();
+
+Output:
+
+Bilal
+
+---
+
+# call vs apply vs bind
+
+| Method | Executes Immediately | Arguments            |
+| ------ | -------------------- | -------------------- |
+| call   | Yes                  | Comma separated      |
+| apply  | Yes                  | Array                |
+| bind   | No                   | Returns new function |
+
+---
+
+# 9. this Inside Class
+
+class User {
+    constructor(name) {
+        this.name = name;
+    }
+
+    greet() {
+        console.log(this.name);
+    }
+}
+
+const user = new User("Bilal");
+
+user.greet();
+
+Output:
+
+Bilal
+
+`this` refers to current object instance.
+
+---
+
+# Most Expected 5+ Years Interview Questions
+
+---
+
+## Q1. What is `this` in JavaScript?
+
+### Answer
+
+`this` is a reference to the object that is currently executing a function. 
+Its value is determined by how a function is invoked.
+
+---
+
+## Q2. What determines the value of `this`?
+
+### Answer
+
+The way the function is called, not where it is defined.
+
+---
+
+## Q3. Difference Between Regular Function and Arrow Function?
+
+### Regular Function
+
+Creates its own `this`.
+
+function test() {
+    console.log(this);
+}
+
+### Arrow Function
+
+Inherits `this` from parent scope.
+
+const test = () => {
+    console.log(this);
+};
+
+---
+
+## Q4. Output Based
+
+const person = {
+  name: "Bilal",
+
+  greet() {
+    console.log(this.name);
+  }
+};
+
+person.greet();
+
+Output:
+
+Bilal
+
+---
+
+## Q5. Output Based
+
+const person = {
+  name: "Bilal",
+
+  greet: () => {
+    console.log(this.name);
+  }
+};
+
+person.greet();
+```
+
+Output:
+
+undefined
+
+Arrow function gets `this` from outer scope.
+
+---
+
+## Q6. Output Based
+
+var name = "Global";
+
+const user = {
+    name: "Bilal",
+
+    greet() {
+        console.log(this.name);
+    }
+};
+
+const fn = user.greet;
+
+fn();
+```
+
+Output:
+
+Global
+
+(Non-strict mode browser)
+
+or
+
+undefined
+
+(Strict mode)
+
+---
+
+## Q7. What is Explicit Binding?
+
+### Answer
+
+Using `call()`, `apply()`, or `bind()` to manually set `this`.
+
+greet.call(user);
+
+---
+
+## Q8. Difference Between call, apply and bind?
+
+### Answer
+
+* `call()` → executes immediately, arguments separated by commas.
+* `apply()` → executes immediately, arguments as array.
+* `bind()` → returns a new function.
+
+---
+
+## Q9. Why are Arrow Functions Common in React?
+
+### Answer
+
+Because arrow functions preserve lexical `this` and avoid manual binding.
+
+Old React Class Component:
+
+constructor() {
+  this.handleClick = this.handleClick.bind(this);
+}
+
+Arrow:
+
+handleClick = () => {}
+
+No bind required.
+
+---
+
+## Q10. Can we change `this` of an Arrow Function using call/apply/bind?
+
+const fn = () => {
+    console.log(this);
+};
+
+fn.call(user);
+
+### Answer
+
+No.
+
+Arrow functions ignore `call`, `apply`, and `bind` because their `this` is lexically bound.
+
+---
+
+# Senior-Level Answer (5+ Years)
+
+> `this` is a runtime binding that refers to the execution context of a function. 
+Its value depends on how a function is invoked: global invocation, method invocation, 
+constructor invocation (`new`), or explicit binding (`call`, `apply`, `bind`). 
+Arrow functions differ because they don't create their own `this`; instead they inherit it 
+lexically from the surrounding scope. Understanding `this` is critical for event handlers, callbacks, 
+React components, and object-oriented JavaScript.
+
+### One-Liner Interview Definition
+
+> **"`this` is a dynamic reference whose value is determined by the function invocation pattern."**

@@ -1,0 +1,429 @@
+# Prototype in JavaScript
+
+**Prototype** JavaScript ka mechanism hai jiske through objects properties aur methods ko inherit karte hain.
+
+Simple words me:
+
+> JavaScript uses **Prototype-based Inheritance** instead of Classical Inheritance (like Java/C++).
+
+Har object ka ek hidden link hota hai jo kisi dusre object ko point karta hai. 
+Is link ko **[[Prototype]]** ya **Prototype Chain** kehte hain.
+
+---
+
+# Why Prototype?
+
+Agar har object ke andar same method create karoge to unnecessary memory use hogi.
+
+❌ Bad Approach
+
+function User(name) {
+    this.name = name;
+
+    this.greet = function () {
+        console.log(`Hello ${this.name}`);
+    };
+}
+
+const user1 = new User("Bilal");
+const user2 = new User("Ahmed");
+
+Yahan har object ke liye naya `greet()` function create hoga.
+
+---
+
+# Using Prototype
+
+function User(name) {
+    this.name = name;
+}
+
+User.prototype.greet = function () {
+    console.log(`Hello ${this.name}`);
+};
+
+const user1 = new User("Bilal");
+const user2 = new User("Ahmed");
+
+user1.greet();
+user2.greet();
+
+Output:
+
+Hello Bilal
+Hello Ahmed
+
+### Benefit
+
+Sirf **ek hi greet() function memory me create hoga** aur sab objects share karenge.
+
+---
+
+# Understanding Prototype Chain
+
+const obj = {
+    name: "Bilal"
+};
+
+console.log(obj.toString());
+
+Question:
+
+obj me to toString() nahi hai,
+fir kaise call ho gaya?
+
+Answer:
+
+JavaScript prototype chain me search karta hai.
+
+obj
+ ↓
+Object.prototype
+ ↓
+null
+
+`toString()` `Object.prototype` me mil jata hai.
+
+---
+
+# Prototype Chain Example
+
+const arr = [1, 2, 3];
+
+console.log(arr.hasOwnProperty("length"));
+
+Search Flow:
+
+arr
+ ↓
+Array.prototype
+ ↓
+Object.prototype
+ ↓
+null
+
+JavaScript chain me upar search karta rehta hai jab tak property mil na jaye.
+
+---
+
+# **proto** vs prototype
+
+Ye bahut common interview question hai.
+
+---
+
+## prototype
+
+Only functions have `prototype`.
+
+function User() {}
+
+console.log(User.prototype);
+
+Output:
+
+{}
+
+---
+
+## **proto**
+
+Every object has access to its prototype through `__proto__`.
+
+const user = {};
+
+console.log(user.__proto__);
+
+Output:
+
+Object.prototype
+
+---
+
+## Relation
+
+function User() {}
+
+const user = new User();
+
+console.log(user.__proto__ === User.prototype);
+
+Output:
+
+true
+
+---
+
+# How `new` Works Internally
+
+function User(name) {
+    this.name = name;
+}
+
+const user = new User("Bilal");
+
+Internally:
+
+const user = {};
+
+user.__proto__ = User.prototype;
+
+User.call(user, "Bilal");
+
+return user;
+
+---
+
+# Object.create()
+
+Creates a new object with specified prototype.
+
+const person = {
+    greet() {
+        console.log("Hello");
+    }
+};
+
+const user = Object.create(person);
+
+user.greet();
+
+Output:
+
+Hello
+
+Prototype chain:
+
+user
+ ↓
+person
+ ↓
+Object.prototype
+
+---
+
+# ES6 Class and Prototype
+
+Many developers think classes are different.
+
+Actually:
+
+class User {
+    greet() {
+        console.log("Hello");
+    }
+}
+```
+
+Internally:
+
+function User() {}
+
+User.prototype.greet = function () {
+    console.log("Hello");
+};
+```
+
+Classes are syntactic sugar over prototypes.
+
+---
+
+# Most Expected 5+ Years Interview Questions
+
+---
+
+## Q1. What is Prototype in JavaScript?
+
+### Answer
+
+A prototype is an object from which other objects inherit properties and methods.
+
+---
+
+## Q2. What is Prototype Chain?
+
+### Answer
+
+When JavaScript cannot find a property on an object, it searches its prototype, then prototype's prototype, 
+and so on until `null` is reached.
+
+Object
+ ↓
+Prototype
+ ↓
+Prototype
+ ↓
+null
+```
+
+---
+
+## Q3. Why is Prototype Used?
+
+### Answer
+
+To share methods among multiple objects and reduce memory usage.
+
+---
+
+## Q4. Difference Between `__proto__` and `prototype`?
+
+| prototype                  | **proto**                  |
+| -------------------------- | -------------------------- |
+| Exists on functions        | Exists on objects          |
+| Used when creating objects | Refers to actual prototype |
+| Constructor property       | Internal prototype link    |
+
+Example:
+
+function User() {}
+
+const user = new User();
+
+console.log(user.__proto__ === User.prototype);
+
+Output:
+
+true
+```
+
+---
+
+## Q5. Output Based
+
+function User() {}
+
+console.log(User.prototype);
+
+Output:
+
+{}
+
+Because every function automatically gets a prototype object.
+
+---
+
+## Q6. Output Based
+
+const arr = [];
+
+console.log(arr.__proto__ === Array.prototype);
+```
+
+Output:
+
+true
+
+---
+
+## Q7. What Happens When a Property Is Not Found?
+
+### Answer
+
+JavaScript traverses the prototype chain until it finds the property or reaches `null`.
+
+---
+
+## Q8. What is Object.create()?
+
+### Answer
+
+Creates a new object and sets its prototype.
+
+const obj = Object.create(parent);
+
+---
+
+## Q9. Are ES6 Classes Prototype-Based?
+
+### Answer
+
+Yes.
+
+Classes are syntactic sugar over JavaScript's prototype system.
+
+---
+
+## Q10. How Does `new` Work Internally?
+
+### Answer
+
+`new` performs four steps:
+
+1. Creates empty object.
+2. Links object to constructor prototype.
+3. Calls constructor with `this`.
+4. Returns object.
+
+---
+
+# Frequently Asked Senior-Level Interview Question
+
+## Q11. What is the Output?
+
+function User(name) {
+    this.name = name;
+}
+
+User.prototype.greet = function () {
+    console.log(this.name);
+};
+
+const user = new User("Bilal");
+
+console.log(user.hasOwnProperty("name"));
+console.log(user.hasOwnProperty("greet"));
+
+Output:
+
+true
+false
+
+### Why?
+
+name
+```
+
+exists directly on object.
+
+greet
+
+exists on prototype.
+
+---
+
+# Real-World Example
+
+Array.prototype.myForEach = function(callback) {
+    for (let i = 0; i < this.length; i++) {
+        callback(this[i], i);
+    }
+};
+
+[1,2,3].myForEach(item => {
+    console.log(item);
+});
+```
+
+Output:
+
+1
+2
+3
+
+This works because all arrays inherit from `Array.prototype`.
+
+---
+
+# Senior-Level Answer (5+ Years)
+
+> JavaScript uses prototype-based inheritance. Every object has an internal reference (`[[Prototype]]`) to another object. 
+When a property or method is accessed, JavaScript first searches the object itself; if not found, it traverses the 
+prototype chain until the property is found or the chain ends at `null`. Prototypes enable method sharing, 
+memory optimization, and form the foundation of inheritance in JavaScript. ES6 classes are built on top of this 
+prototype mechanism.
+
+### One-Liner Interview Definition
+
+> **"A prototype is an object used as a template from which other objects inherit properties and methods 
+ through the prototype chain."**

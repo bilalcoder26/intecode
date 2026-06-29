@@ -19,7 +19,7 @@ function findSecondLargestNumber2(arr){
     if(!arr.length) return;
     let firstMaxNumber = -Infinity;
     let secondMaxNumber = -Infinity;
-    for(let num of arr){
+    for(const num of arr){
         if(num > firstMaxNumber){
             secondMaxNumber = firstMaxNumber
             firstMaxNumber = num;

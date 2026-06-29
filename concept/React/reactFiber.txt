@@ -1,0 +1,489 @@
+# React Fiber
+
+**React Fiber** React 16 me introduce kiya gaya ek **new reconciliation engine** hai.
+
+Simple words me:
+
+> React Fiber allows React to break rendering work into small units and prioritize updates so the UI remains responsive.
+
+---
+
+# Why React Fiber Was Introduced?
+
+Before React 16:
+
+State Change
+    ↓
+Reconciliation
+    ↓
+DOM Update
+
+React pura tree ek hi baar process karta tha.
+
+Agar component tree bahut bada ho:
+
+5000 Components
+
+To browser block ho sakta tha.
+
+Result:
+
+❌ UI Freeze
+❌ Scroll Lag
+❌ Input Delay
+
+---
+
+# Problem Example
+
+Suppose:
+
+<App>
+  <Dashboard />
+  <Users />
+  <Products />
+  <Orders />
+</App>
+
+Agar state update aayi:
+
+setState(...)
+
+Old React:
+
+Process everything
+↓
+Complete work
+↓
+Update DOM
+
+Beech me pause nahi kar sakta tha.
+
+---
+
+# Fiber Solution
+
+Fiber rendering ko small chunks me divide karta hai.
+
+Work 1
+Pause
+Work 2
+Pause
+Work 3
+Pause
+Continue
+
+Browser ko beech me control mil jata hai.
+
+Result:
+
+✅ Smooth UI
+
+✅ Better responsiveness
+
+✅ High-priority updates first
+
+---
+
+# What is a Fiber?
+
+Internally React har component ko Fiber Object me convert karta hai.
+
+Example:
+
+<App>
+   <Header />
+   <Sidebar />
+   <Content />
+</App>
+
+Fiber Tree:
+
+App Fiber
+  |
+  ├── Header Fiber
+  |
+  ├── Sidebar Fiber
+  |
+  └── Content Fiber
+
+Each component = One Fiber Node
+
+---
+
+# Fiber Node Contains
+
+{
+  type,
+  props,
+  state,
+  child,
+  sibling,
+  return
+}
+
+---
+
+## Example
+
+<div>
+   <h1>Hello</h1>
+   <button>Click</button>
+</div>
+
+Fiber Tree:
+
+div
+ |
+ ├── h1
+ |
+ └── button
+
+Every node is a Fiber.
+
+---
+
+# Reconciliation
+
+Interview me Fiber ke saath ye term almost zarur poochte hain.
+
+### Reconciliation
+
+Process of comparing:
+
+Old Virtual DOM
+vs
+New Virtual DOM
+
+and finding minimal changes.
+
+---
+
+Before Fiber:
+
+Sync Rendering
+
+Everything at once.
+
+---
+
+After Fiber:
+
+Incremental Rendering
+
+Can pause, resume, prioritize.
+
+---
+
+# Prioritization
+
+React Fiber assigns priorities.
+
+---
+
+### High Priority
+
+Button Click
+Input Typing
+Animation
+
+Must happen immediately.
+
+---
+
+### Low Priority
+
+Background Data
+Analytics
+Hidden UI Updates
+
+Can wait.
+
+---
+
+Example:
+
+User typing:
+
+B
+Bi
+Bil
+Bila
+Bilal
+
+Fiber ensures typing stays smooth.
+
+---
+
+# Fiber Architecture
+
+Fiber has two phases.
+
+---
+
+## 1. Render Phase
+
+Also called:
+
+Reconciliation Phase
+
+Tasks:
+
+* Build Fiber Tree
+* Compare changes
+* Determine updates
+
+Can be interrupted.
+
+Start
+Pause
+Resume
+Pause
+Resume
+
+---
+
+## 2. Commit Phase
+
+Tasks:
+
+* Apply DOM changes
+* Run effects
+
+Cannot be interrupted.
+
+DOM Update
+useLayoutEffect
+useEffect
+
+Commit phase is synchronous.
+
+---
+
+# Render vs Commit
+
+| Render Phase       | Commit Phase    |
+| ------------------ | --------------- |
+| Calculates changes | Applies changes |
+| Can pause          | Cannot pause    |
+| Async              | Sync            |
+| Builds Fiber Tree  | Updates DOM     |
+
+---
+
+# Double Buffering
+
+Fiber maintains two trees.
+
+---
+
+## Current Tree
+
+Currently rendered UI.
+
+---
+
+## Work In Progress Tree
+
+New tree being prepared.
+
+Current Tree
+        |
+        |
+Work In Progress Tree
+
+When work finishes:
+
+Swap Trees
+
+This makes updates efficient.
+
+---
+
+# React Fiber and Hooks
+
+const [count, setCount] = useState(0);
+
+Each hook state is stored inside Fiber nodes.
+
+Fiber tracks:
+
+Current State
+Pending Updates
+Effects
+
+---
+
+# Concurrent Rendering
+
+Fiber enabled modern React features.
+
+Examples:
+
+* Concurrent Rendering
+* Suspense
+* Transitions
+* Automatic Batching
+
+---
+
+Example:
+
+startTransition(() => {
+   setProducts(bigList);
+});
+
+Low-priority update.
+
+User interactions remain responsive.
+
+---
+
+# Most Expected 5+ Years Interview Questions
+
+---
+
+## Q1. What is React Fiber?
+
+### Answer
+
+React Fiber is the reconciliation engine introduced in React 16 that enables incremental rendering, 
+prioritization of updates, and interruption of rendering work.
+
+---
+
+## Q2. Why Was Fiber Introduced?
+
+### Answer
+
+To solve UI blocking caused by synchronous rendering and enable smooth user interactions through 
+scheduling and prioritization.
+
+---
+
+## Q3. What Problems Does Fiber Solve?
+
+### Answer
+
+* UI freezes
+* Input lag
+* Large tree rendering delays
+* Inability to prioritize updates
+
+---
+
+## Q4. What is a Fiber Node?
+
+### Answer
+
+A Fiber Node is a JavaScript object representing a React component and storing information about 
+its state, props, effects, and relationships in the Fiber tree.
+
+---
+
+## Q5. What is Reconciliation?
+
+### Answer
+
+The process of comparing the old Virtual DOM with the new Virtual DOM and determining the minimal set of updates required.
+
+---
+
+## Q6. What are the Two Phases of Fiber?
+
+### Answer
+
+### Render Phase
+
+Calculate changes
+Build Fiber Tree
+Interruptible
+
+### Commit Phase
+
+Apply DOM Changes
+Run Effects
+Not Interruptible
+
+---
+
+## Q7. What is Incremental Rendering?
+
+### Answer
+
+Breaking rendering work into smaller units so React can pause, resume, and prioritize tasks.
+
+---
+
+## Q8. What is the Difference Between Stack Reconciler and Fiber?
+
+| Stack Reconciler     | Fiber               |
+| -------------------- | ------------------- |
+| Synchronous          | Incremental         |
+| Cannot pause         | Can pause           |
+| No prioritization    | Priority scheduling |
+| UI blocking possible | Responsive UI       |
+
+---
+
+## Q9. What is Double Buffering in Fiber?
+
+### Answer
+
+React maintains:
+
+Current Tree
+Work-In-Progress Tree
+
+and swaps them during commit for efficient updates.
+
+---
+
+## Q10. How Does Fiber Help Concurrent Features?
+
+### Answer
+
+Fiber's scheduling system allows React to interrupt, prioritize, and resume rendering work, 
+enabling features like Suspense and Transitions.
+
+---
+
+# Interview-Level Example
+
+### Without Fiber
+
+Huge Render
+↓
+Browser Blocked
+↓
+User Click Ignored
+
+---
+
+### With Fiber
+
+Render Part 1
+↓
+Handle Click
+↓
+Render Part 2
+↓
+Update UI
+
+User interaction stays smooth.
+
+---
+
+# Senior-Level Answer (5+ Years)
+
+> React Fiber is the core reconciliation architecture introduced in React 16. 
+It replaces the older stack reconciler with a system that represents components as Fiber nodes and allows 
+rendering work to be split into small units. This enables scheduling, prioritization, interruption, and resumption 
+of rendering tasks. Fiber separates rendering into Render and Commit phases, supports concurrent features, 
+improves responsiveness, and forms the foundation of modern React capabilities such as Suspense, Transitions, 
+and Automatic Batching.
+
+### One-Liner Interview Definition
+
+> **"React Fiber is React's reconciliation engine that enables incremental rendering, task prioritization, and 
+interruptible work to keep applications responsive."**

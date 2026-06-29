@@ -1,0 +1,401 @@
+# Event Propagation in JavaScript
+
+**Event Propagation** is the process that defines the order in which events travel through the DOM tree when an event occurs.
+
+When you click on an element, the event doesn't happen only on that element. It travels through the DOM in different phases.
+
+---
+
+## Example DOM Structure
+
+<div id="grandParent">
+    Grand Parent
+
+    <div id="parent">
+        Parent
+
+        <button id="child">
+            Click Me
+        </button>
+    </div>
+</div>
+
+---
+
+# Three Phases of Event Propagation
+
+1. Capturing Phase (Top → Bottom)
+2. Target Phase
+3. Bubbling Phase (Bottom → Top)
+
+Document
+   ↓
+Grand Parent
+   ↓
+Parent
+   ↓
+Child (Target)
+   ↑
+Parent
+   ↑
+Grand Parent
+   ↑
+Document
+
+---
+
+# 1. Event Bubbling (Default)
+
+Event starts from target element and moves upward.
+
+document.getElementById("grandParent")
+  .addEventListener("click", () => {
+    console.log("Grand Parent");
+  });
+
+document.getElementById("parent")
+  .addEventListener("click", () => {
+    console.log("Parent");
+  });
+
+document.getElementById("child")
+  .addEventListener("click", () => {
+    console.log("Child");
+  });
+
+Click on button:
+
+Output:
+
+Child
+Parent
+Grand Parent
+
+### Why?
+
+Because bubbling goes:
+
+Child → Parent → Grand Parent
+
+---
+
+# 2. Event Capturing
+
+Capturing travels from top to bottom.
+
+To enable capturing:
+
+element.addEventListener(
+  "click",
+  handler,
+  true
+);
+
+OR
+
+element.addEventListener(
+  "click",
+  handler,
+  { capture: true }
+);
+
+Example:
+
+document.getElementById("grandParent")
+  .addEventListener(
+    "click",
+    () => console.log("Grand Parent"),
+    true
+  );
+
+document.getElementById("parent")
+  .addEventListener(
+    "click",
+    () => console.log("Parent"),
+    true
+  );
+
+document.getElementById("child")
+  .addEventListener(
+    "click",
+    () => console.log("Child"),
+    true
+  );
+
+Output:
+
+Grand Parent
+Parent
+Child
+
+---
+
+# 3. Target Phase
+
+The actual element clicked.
+
+<button id="child">Click Me</button>
+
+When clicked:
+
+Capturing
+↓
+Target
+↓
+Bubbling
+
+Target is:
+
+event.target
+
+---
+
+# Understanding event.target vs event.currentTarget
+
+## event.target
+
+Element that triggered the event.
+
+## event.currentTarget
+
+Element whose handler is currently executing.
+
+Example:
+
+<div id="parent">
+    <button id="child">
+        Click
+    </button>
+</div>
+
+parent.addEventListener("click", function(event) {
+    console.log(event.target);
+    console.log(event.currentTarget);
+});
+
+Click button:
+
+Output:
+
+event.target => button
+event.currentTarget => div
+
+---
+
+# stopPropagation()
+
+Stops event from moving further.
+
+child.addEventListener("click", (event) => {
+    console.log("Child");
+    event.stopPropagation();
+});
+
+parent.addEventListener("click", () => {
+    console.log("Parent");
+});
+
+Output:
+
+Child
+
+Parent won't execute.
+
+---
+
+# stopImmediatePropagation()
+
+Stops:
+
+* Further propagation
+* Other handlers on same element
+
+button.addEventListener("click", (e) => {
+    console.log("First");
+    e.stopImmediatePropagation();
+});
+
+button.addEventListener("click", () => {
+    console.log("Second");
+});
+
+Output:
+
+First
+
+---
+
+# Event Delegation (Very Important)
+
+Uses bubbling to handle events efficiently.
+
+Instead of:
+
+1000 buttons
+1000 listeners
+
+Use:
+
+1 parent
+1 listener
+
+Example:
+
+<ul id="list">
+  <li>React</li>
+  <li>Angular</li>
+  <li>Vue</li>
+</ul>
+
+document.getElementById("list")
+  .addEventListener("click", (event) => {
+      console.log(event.target.textContent);
+  });
+
+Click Vue:
+
+Output:
+
+Vue
+
+### Benefits
+
+* Better performance
+* Less memory usage
+* Dynamic elements supported
+
+---
+
+# Most Expected 5+ Years Interview Questions
+
+---
+
+## Q1. What is Event Propagation?
+
+### Answer
+
+Event propagation is the mechanism by which an event travels through the DOM hierarchy in three phases: 
+Capturing, Target, and Bubbling.
+
+---
+
+## Q2. What is Event Bubbling?
+
+### Answer
+
+In bubbling, an event starts from the target element and propagates upward through its ancestors.
+
+Child → Parent → Grand Parent
+
+---
+
+## Q3. What is Event Capturing?
+
+### Answer
+
+In capturing, an event travels from the root element down to the target element.
+
+Grand Parent → Parent → Child
+
+Enabled using:
+
+addEventListener("click", handler, true);
+
+---
+
+## Q4. Difference Between Bubbling and Capturing?
+
+| Bubbling           | Capturing            |
+| ------------------ | -------------------- |
+| Bottom → Top       | Top → Bottom         |
+| Default behavior   | Must enable manually |
+| Most commonly used | Less common          |
+
+---
+
+## Q5. Difference Between event.target and event.currentTarget?
+
+### Answer
+
+event.target
+
+Actual clicked element.
+
+event.currentTarget
+
+Element whose handler is executing.
+
+---
+
+## Q6. What is stopPropagation()?
+
+### Answer
+
+Stops the event from moving further in the DOM tree.
+
+event.stopPropagation();
+
+---
+
+## Q7. What is stopImmediatePropagation()?
+
+### Answer
+
+Stops:
+
+* Event propagation
+* Remaining listeners on the same element
+
+---
+
+## Q8. What is Event Delegation?
+
+### Answer
+
+A pattern where a parent element handles events for its child elements using event bubbling.
+
+parent.addEventListener("click", handler);
+
+Used for:
+
+* Dynamic lists
+* Tables
+* Menus
+* Large datasets
+
+---
+
+## Q9. Why is Event Delegation Better?
+
+### Answer
+
+* Fewer event listeners
+* Better performance
+* Lower memory consumption
+* Works with dynamically added elements
+
+---
+
+## Q10. Does React use Event Delegation?
+
+### Answer
+
+Yes.
+
+React uses a **Synthetic Event System** and attaches event listeners at a higher level, 
+then delegates events internally for better performance.
+
+---
+
+# Senior-Level Answer (5+ Years)
+
+> Event Propagation is the flow of an event through the DOM tree in three phases: 
+Capturing, Target, and Bubbling. By default, browsers use bubbling. Understanding propagation is essential
+ for implementing event delegation, preventing unwanted event execution with `stopPropagation()`, 
+ and optimizing large applications. React further abstracts this through its Synthetic Event system and 
+ centralized event delegation mechanism.
+
+### One-Liner Interview Definition
+
+> "Event Propagation is the process by which an event travels through the DOM hierarchy via 
+Capturing → Target → Bubbling phases."

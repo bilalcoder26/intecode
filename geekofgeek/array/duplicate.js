@@ -50,4 +50,4 @@ function removeDuplicate2(arr){
     return [...num];
 }
 
-// console.log(removeDuplicate2([1,3, 2, 6, 3, 4, 4, 6, 5, 5]))
+console.log(removeDuplicate2([1,3, 2, 6, 3, 4, 4, 6, 5, 5]))
