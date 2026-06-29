@@ -46,6 +46,7 @@ function fasterGroupAnagram(str){
         }
         // console.log(count)
         const key = count.join("#");
+        console.log(key)
         if(!map.has(key)){
             map.set(key,[])
         }
@@ -55,5 +56,5 @@ function fasterGroupAnagram(str){
 }
 
 console.log(fasterGroupAnagram(["eat", "tea", "tan", "ate", "nat", "bat"]))
-console.log(fasterGroupAnagram([""]))
-console.log(fasterGroupAnagram(["a"]))
+// console.log(fasterGroupAnagram([""]))
+// console.log(fasterGroupAnagram(["a"]))

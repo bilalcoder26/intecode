@@ -132,10 +132,10 @@ p.then((val) => {
     console.log("second :", val);
     return MyPromise.resolve(val + 5);
   })
-  .then((val) => {
-    console.log("Third :", val);
-    throw new Error("something went wrong");
-  })
+//   .then((val) => {
+//     console.log("Third :", val);
+//     throw new Error("something went wrong");
+//   })
   .catch((err) => {
     console.error("caught error :", err.message);
   });

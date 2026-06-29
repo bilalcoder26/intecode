@@ -1,0 +1,58 @@
+Q1. What is a Closure?
+Answer
+
+A closure is created when a function remembers and accesses variables from its outer lexical scope 
+even after the outer function has completed execution.
+
+Q2. Why are Closures useful?
+Answer
+
+Closures are useful for:
+
+Data hiding
+Private variables
+Function factories
+Memoization
+Event handlers
+Callbacks
+React Hooks internals
+
+Q3. What is Lexical Scope?
+Answer
+
+Lexical scope means a function can access variables from the scope where it was defined, not where it is called.
+
+function outer() {
+  let x = 10;
+
+  function inner() {
+    console.log(x);
+  }
+
+  return inner;
+}
+
+inner() remembers x because of lexical scope.
+
+
+Q10. Real-World Example in React
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(prev => prev + 1);
+  };
+
+  return (
+    <button onClick={increment}>
+      {count}
+    </button>
+  );
+}
+
+The increment function forms a closure over variables available in the component scope.
+
+A closure is formed when an inner function retains access to variables from its outer lexical scope 
+even after the outer function has finished execution. JavaScript keeps references to those variables in memory 
+as long as the closure exists. Closures are commonly used for encapsulation, private state management, 
+currying, memoization, event handlers, and are heavily leveraged internally by React Hooks and callback functions.

@@ -37,7 +37,7 @@ function threeSum(nums){
         let right = nums.length-1;
         if(i>0 && nums[i] === nums[i-1]) continue;
         while(left < right){
-            const sum = nums[i] + nums[left] +nums[right];
+            const sum = nums[i] + nums[left] + nums[right];
             if(sum === 0){
                 result.push([nums[i], nums[left], nums[right]]);
                 while(left < right && nums[left] === nums[left+1]) left++;

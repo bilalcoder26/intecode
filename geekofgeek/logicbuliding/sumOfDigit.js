@@ -44,4 +44,4 @@ function findSum(num){
 
 
 }
-console.log(findSum(678))
+console.log("optimized",findSum(678))
