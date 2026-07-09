@@ -1,0 +1,17 @@
+Curring is atechnique where a function with multiple arguments transformed into sequence of function each taking one arguments
+
+function add(a,b,c){
+    return a+b+c;
+}
+add(1,2,3);
+
+//curried function
+
+function add(a){
+    return function(b){
+        return function(c){
+            return a+b+c;
+        }
+    }
+}
+add(1)(2)(3);
